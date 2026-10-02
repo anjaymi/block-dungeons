@@ -1422,17 +1422,9 @@ addEventListener('keydown', e=>{
     if(n!==undefined) chooseUpgrade(n);
     if(e.code==='KeyR') reroll();
   } else if(state==='title'){
-    const w = {Digit1:0,Digit2:1,Digit3:2}[e.code], m = {Digit4:0,Digit5:1,Digit6:2,KeyQ:0,KeyW:1,KeyE:2}[e.code];
-    if(w!==undefined) selW = Math.min(START_W.length-1,Math.floor(selW/3)*3+w); if(m!==undefined) selM = m;
-    const c4 = {Digit7:0,Digit8:1,Digit9:2,Digit0:3}[e.code]; if(c4!==undefined) selC = c4;
-    if(e.code==='KeyC' || e.code==='KeyZ') selC = (selC+(e.code==='KeyC'?1:3))%4;
-    if(e.code==='Tab'){ e.preventDefault(); selK = (selK + (e.shiftKey ? CLASS_ORDER.length-1 : 1)) % CLASS_ORDER.length; }
-    if(e.code==='ArrowLeft') selW = (selW+START_W.length-1)%START_W.length; if(e.code==='ArrowRight') selW = (selW+1)%START_W.length;
-    if(e.code==='ArrowUp') selM = (selM+2)%3; if(e.code==='ArrowDown') selM = (selM+1)%3;
-    if(e.code==='KeyV') cycleWeaponStyle();
-    if(e.code==='Enter' || e.code==='Space') startGame();
+    titleKey(e);
   } else if(state==='dead'){
-    if(e.code==='Enter' || e.code==='Space') state = 'title';
+    if(e.code==='Enter' || e.code==='Space'){ state = 'title'; TS.step = 'menu'; }
   }
 });
 addEventListener('keyup', e=>{ keys[e.code] = false; });
@@ -1447,13 +1439,11 @@ cv.addEventListener('mousedown', e=>{
     if(e.button===1){ e.preventDefault(); player.buf = {type:'cast', t:BUF}; }
   }
   else if(state==='title'){
-    const us = US(), mxu = mouse.x/us, myu = mouse.y/us;
-    const hit = titleRects.find(r=>mxu>=r.x && mxu<=r.x+r.w && myu>=r.y && myu<=r.y+r.h);
-    if(hit){ if(hit.kind==='w') selW = hit.i; else if(hit.kind==='weaponPage') selW = hit.page*3; else if(hit.kind==='m') selM = hit.i; else if(hit.kind==='c') selC = hit.i; else if(hit.kind==='k') selK = hit.i; else if(hit.kind==='style') setWeaponStyle(hit.style); else if(hit.kind==='gallery') location.href = 'weapon-gallery-v4.html'; else startGame(); }
+    const us = US(); if(e.button===0) titleClick(mouse.x/us, mouse.y/us);
   }
   else if(state==='bag'){ bagClick(e.button, e.shiftKey, e.ctrlKey || e.metaKey); mouse.l = mouse.r = false; }
   else if(state==='map'){ if(e.button===0) mapClick(); else state = 'play'; mouse.l = mouse.r = false; }
-  else if(state==='dead') state = 'title';
+  else if(state==='dead'){ state = 'title'; TS.step = 'menu'; }
   else if(state==='upgrade'){ if(hover>=0) chooseUpgrade(hover); else if(hover===-2) reroll(); }
   else if(state==='pause') state='play';
 });
@@ -2783,6 +2773,12 @@ function basePose(e, sf){
 }
 function playerPose(p){
   const pose = basePose(p, p.speedFrac);
+  if(p.st==='sit'){   // 标题营火：坐姿（腿前伸、手搭膝、轻微呼吸）
+    const br = Math.sin(performance.now()/1000*1.6 + (p.sitPh||0));
+    pose.legR = -1.5; pose.legL = -1.42; pose.armR = [0.25, -0.75 + br*0.03, 0.12, 0]; pose.armL = [-0.25, -0.7 + br*0.03, -0.12, 0];
+    pose.lean = 0.14 + br*0.015; pose.bob = br*0.25; pose.headPitch = (p.sitLook||0); pose.twist = p.sitTwist||0; pose.cape = 0.15;
+    return pose;
+  }
   if(p.st==='move' && p.z>0.01){ pose.legR = -0.75; pose.legL = 0.35; pose.armR = [0.1,-0.7,0.3,0]; pose.armL = [-0.1,-0.9,-0.4,0]; pose.cape = 0.9; pose.bob = 0; }
   if(p.st==='dash'){ const u = p.ph==='rec' ? eio(p.pt/0.2) : 0; pose.armR = [-0.15,lerp(-1.57,-0.4,u),0,lerp(7,0,u)]; pose.wpR = lerp(0,-1.25,u); pose.wpL = pose.wpR; pose.armL = [0.4,lerp(1.0,0.2,u),-0.3,0]; pose.lean = lerp(0.55,0.05,u); pose.legR = lerp(-0.9,0,u); pose.legL = lerp(0.7,0,u); pose.cape = lerp(1.3,0.2,u); pose.twist = lerp(-0.35,0,u); }
   if(p.st==='jatk'){ pose.armR = [-0.35,-2.9,0,0]; pose.armL = [0.45,-2.9,0,0]; pose.wpR = 0; pose.wpL = 0; pose.lean = -0.25; pose.legR = -0.9; pose.legL = -0.3; pose.cape = 1.1; }
@@ -4548,65 +4544,521 @@ function drawHUD(){
   // 悬停提示
   if(hudTip) K.chip(hudTip.x, hudTip.y - 22, hudTip.t, {align:'center', col:C.gold});
 }
+// =====================================================================
+//  标题流程：主菜单（营火夜景） → 英雄选择 → 职业选择 → 装备确认
+// =====================================================================
+const TS = { step:'menu', t0:0, menuI:0, overlay:null, drag:null, rot:0, rotV:0, embers:[], lastStep:'menu', fromStep:null, fadeT:1 };
+const TITLE_STEPS = ['hero','class','loadout'];
+const CLASS_WEAPON = {warrior:'greatsword', ranger:'sword', mage:'staff', assassin:'sickles', paladin:'shieldblade'};
+const CLASS_REC = {warrior:['greatsword','hammer'], ranger:['sword','sickles'], mage:['staff'], assassin:['sickles','sword'], paladin:['shieldblade','hammer']};
+const CLASS_ROLE = {warrior:'近战 · 爆发', ranger:'远程 · 风筝', mage:'法术 · 范围', assassin:'近战 · 暴击', paladin:'坦克 · 续航'};
+const CLASS_RATE = {warrior:[5,3,2,1,4], ranger:[3,2,3,5,2], mage:[2,1,3,5,2], assassin:[5,1,5,1,2], paladin:[3,5,2,1,5]};   // 攻击 防御 速度 射程 续航
+const CHAR_RATE  = {akane:[4,2,3,1], yoru:[4,1,5,1], yuki:[2,2,2,5], midori:[3,2,4,3]};   // 力量 体质 敏捷 法力
+const WEAPON_ICO = {greatsword:'🗡',sickles:'⚔',sword:'🔪',hammer:'🔨',staff:'🔮',shieldblade:'🛡'};
 const titleHeroes = {}, titleIdle = {};
-function drawTitle(){
-  if(CLASS_ORDER[selK]==='mage' && START_W[selW]!=='staff') selW = START_W.indexOf('staff');   // 法师只能选法杖
-  const t = performance.now()/1000;
-  ox = VW/2; oy = VH*0.13;
-  ctx.fillStyle='#07070d'; ctx.fillRect(0,0,VW,VH);
-  const g = ctx.createRadialGradient(VW/2,VH*0.4,0,VW/2,VH*0.4,VW*0.5); g.addColorStop(0,'rgba(80,60,140,.35)'); g.addColorStop(1,'rgba(0,0,0,0)'); ctx.fillStyle=g; ctx.fillRect(0,0,VW,VH);
-  for(let j=-3;j<=3;j++) for(let i=-3;i<=3;i++){ if(i*i+j*j>9) continue; poly([P(i,j+3),P(i+1,j+3),P(i+1,j+4),P(i,j+4)], ['#3a3a44','#34343e','#40404a'][Math.floor(hash(i+9,j+9)*3)], 'rgba(0,0,0,.25)'); }
-  // 演示：英雄用所选武器循环整套连击
-  const wk = START_W[selW], W = WEAPONS[wk];
-  const total = W.combo.reduce((s2,d)=>s2+d.w+d.act+d.rec,0) + 0.4, cyc = t % total;
-  const hk = CHAR_ORDER[selC], hero = Object.assign(titleHeroes[hk] || (titleHeroes[hk] = newPlayer()), {char:hk, x:0.5, y:3.5, ang:0.6, st:'atk', speedFrac:0, weapon:wk});
-  let acc = 0, idx2 = 0, ph = 'rec', pt = 0;
-  for(let i=0;i<W.combo.length;i++){ const d = W.combo[i]; const tot = d.w+d.act+d.rec; if(cyc < acc+tot || i===W.combo.length-1){ idx2 = i; const u = cyc-acc; if(u<d.w){ph='wind';pt=u;} else if(u<d.w+d.act){ph='act';pt=u-d.w;} else {ph='rec';pt=Math.min(u-d.w-d.act,d.rec);} break; } acc += tot; }
-  const dd = W.combo[idx2]; Object.assign(hero, {atkDef:dd, ph, pt, T:{w:dd.w,act:dd.act,rec:dd.rec}, combo:idx2});
-  const savedP = player; player = hero;
-  const z = {type:'zombie',x:-1.6,y:3.8,ang:0.3,walk:t*6,sf:1,flash:0,st:'chase',t:0};
-  const cr = {type:'creeper',x:2.6,y:3.2,ang:Math.PI,walk:t*6,sf:0.6,flash:0,st:'chase',t:0,fuse:0};
-  const draws = [[z,()=>mobRig(z)],[hero,()=>playerRig(hero)],[cr,()=>mobRig(cr)]];
-  CHAR_ORDER.forEach((k,i)=>{ if(k===hk) return; const e = titleIdle[k] || (titleIdle[k] = Object.assign(newPlayer(), {char:k}));
-    const slot = CHAR_ORDER.filter(c=>c!==hk).indexOf(k); Object.assign(e, {x:[-4.2,-2.9,3.9][slot], y:[3.1,2.4,2.2][slot], ang:0.9+Math.sin(t*0.5+i)*0.4, st:'move', speedFrac:0, weapon:'fist', walk:0}); draws.push([e,()=>playerRig(e)]); });
-  draws.sort((a2,b2)=>(a2[0].x+a2[0].y)-(b2[0].x+b2[0].y)).forEach(([e,f])=>{ shadow(e,0.35); drawRig(e, f(), PX*1.6); });
-  player = savedP;
-  txt('方块地牢', VW/2, VH*0.08, Math.min(64, VW/11), '#f0d070', 'center', '"Microsoft YaHei",sans-serif');
-  txt('BLOCK  DUNGEONS', VW/2, VH*0.08+46, 18, '#c0b8e0', 'center');
-  // 卡片
-  titleRects = [];
-  const ch = Math.min(80,Math.max(50,(VH-380)/5)), gy = Math.min(28,Math.max(20,VH*.035)), y0 = Math.max(VH*.2, VH - (4*(ch+gy) + 172));
-  const row = (y, title, keys, list, sel, kind, info) => {
-    const n = list.length, gap = 12, cw = Math.min(n>4 ? 180 : n>3 ? 200 : 236, (VW-60-gap*(n-1))/n), tot = cw*n+gap*(n-1), x0 = VW/2-tot/2;
-    txt(title, VW/2, y-14, 15, '#c8b0ff', 'center');
-    list.forEach((k,i)=>{
-      const x = x0 + i*(cw+gap), on = i===sel, hov = mouse.x>=x && mouse.x<=x+cw && mouse.y>=y && mouse.y<=y+ch;
-      panel(x, y, cw, ch, on ? 0.92 : 0.6);
-      ctx.strokeStyle = on ? '#ffd860' : hov ? 'rgba(255,255,255,.5)' : 'rgba(255,255,255,.12)'; ctx.lineWidth = on ? 3 : 1.5; ctx.strokeRect(x+1, y+1, cw-2, ch-2);
-      const I = info(k);
-      txt(`${keys[i]}  ${I.ico} ${I.n}`, x+12, y+19, 16, on ? '#ffe08a' : '#eee');
-      I.d.slice(0,ch<75 ? 2 : 3).forEach((l,j)=>txt(l, x+12, y+(ch<75 ? 35 : 40)+j*(ch<75 ? 14 : 16), ch<75 ? 10.5 : 12, j===I.d.length-1 && I.hl ? '#ffb070' : '#bbb'));
-      titleRects.push({x, y, w:cw, h:ch, kind, i});
-    });
-  };
-  row(y0, '— 选择角色（7 8 9 0 / Z C）—', ['7','8','9','0'], CHAR_ORDER, selC, 'c', k=>({n:CHAR_INFO[k].n, ico:CHAR_INFO[k].ico, d:CHAR_INFO[k].d, hl:true}));
-  row(y0+ch+gy, '— 选择职业（Tab 切换）—', ['Ⅰ','Ⅱ','Ⅲ','Ⅳ','Ⅴ'], CLASS_ORDER, selK, 'k', k=>({n:`${CLASS_INFO[k].n} · ${CLASS_INFO[k].sk.n}`, ico:CLASS_INFO[k].ico, d:CLASS_INFO[k].d, hl:false}));
-  const weaponPage=Math.floor(selW/3),weaponOffset=weaponPage*3;
-  row(y0+2*(ch+gy),'— 选择武器（←→六款 / 1 2 3 选当前页）—',['1','2','3'],START_W.slice(weaponOffset,weaponOffset+3),selW-weaponOffset,'w',k=>({n:WEAPONS[k].n,ico:{greatsword:'🗡',sickles:'⚔',sword:'🔪',hammer:'🔨',staff:'🔮',shieldblade:'🛡'}[k],d:START_W_D[k].slice(1),hl:true}));
-  for(const r of titleRects)if(r.kind==='w')r.i+=weaponOffset;
-  for(let page=0;page<2;page++){const x=VW/2+(page?95:-175),y=y0+2*(ch+gy)-34;txt(page?'新增武器 ▶':'◀ 基础武器',x+40,y+8,10,page===weaponPage?'#ffe08a':'#a6b4c9','center');titleRects.push({x,y,w:85,h:17,kind:'weaponPage',page});}
-  row(y0+3*(ch+gy), '— 选择魔法（4 5 6 / ↑↓）—', ['4','5','6'], START_M, selM, 'm', k=>({n:SPELLS[k].n, ico:SPELLS[k].ico, d:SPELLS[k].d.concat([`法力 ${SPELLS[k].cost}`]), hl:false}));
-  // 开始按钮
-  drawWeaponStylePicker(y0 + 4*(ch+gy) - 4);
-  const by2 = y0 + 4*(ch+gy) + 63, bw2 = 260, bx2 = VW/2-bw2/2, hovB = mouse.x>=bx2 && mouse.x<=bx2+bw2 && mouse.y>=by2 && mouse.y<=by2+40;
-  UIK.button(bx2, by2, bw2, 40, '▶ 开始冒险（Enter）', {primary:true, hover: hovB || Math.floor(t*2)%2, size:18});
-  titleRects.push({x:bx2, y:by2, w:bw2, h:40, kind:'start'});
-  { const L1 = 'WASD 移动 · 左键 连击 · 右键 射箭 · R/中键 魔法 · 空格 跳跃 · Shift 翻滚/按住奔跑 · 翻滚中左键 冲刺斩',
-          L2 = 'Q 职业技能 · 1 2 3 神器 · E 药水 · F 拾取 · I 背包 · M 地图 · X 换武器组 · Alt 显示掉落 · N 静音 · [ ] 音量';
-    const w = Math.max(UIK.measure(L1,12), UIK.measure(L2,12)) + 36;
-    UIK.panel(VW/2 - w/2, VH - 56, w, 46, {alpha:0.8});
-    txt(L1, VW/2, VH-41, 12, '#bbb', 'center'); txt(L2, VW/2, VH-24, 12, '#bbb', 'center'); }
+const PERK_FALLBACK = {spd:v=>`+${v}% 法术伤害`, bowd:v=>`+${v}% 弓箭伤害`, skills:v=>`+${v} 所有技能`, regen:v=>`+${v} 生命回复/秒`, mregen:v=>`+${v}% 法力回复`};
+const perkTxt = (k, v) => { const f = STAT_TXT[k] || PERK_FALLBACK[k]; return f ? f(v) : `${k} +${v}`; };
+let titleLastPick = null;
+try{ titleLastPick = JSON.parse(localStorage.getItem('bd_lastpick')||'null'); if(titleLastPick){ selC = titleLastPick.c|0; selK = titleLastPick.k|0; selW = titleLastPick.w|0; selM = titleLastPick.m|0; } }catch(e){}
+
+function titleGo(step){
+  if(step===TS.step) return;
+  TS.fromStep = TS.step; TS.step = step; TS.fadeT = 0; TS.t0 = performance.now()/1000;
+  if(window.SFX && SFX.lib) try{ SFX.lib.click(); }catch(e){}
 }
+function titleStart(){
+  try{ localStorage.setItem('bd_lastpick', JSON.stringify({c:selC, k:selK, w:selW, m:selM})); }catch(e){}
+  titleLastPick = {c:selC, k:selK, w:selW, m:selM};
+  TS.step = 'menu'; startGame();
+}
+function titleBack(){
+  if(TS.overlay){ TS.overlay = null; return; }
+  const i = TITLE_STEPS.indexOf(TS.step);
+  titleGo(i<=0 ? 'menu' : TITLE_STEPS[i-1]);
+}
+function titleNext(){
+  if(TS.step==='menu') return titleGo('hero');
+  const i = TITLE_STEPS.indexOf(TS.step);
+  if(i===TITLE_STEPS.length-1) return titleStart();
+  if(TITLE_STEPS[i+1]==='loadout' && CLASS_ORDER[selK]==='mage') selW = START_W.indexOf('staff');
+  titleGo(TITLE_STEPS[i+1]);
+}
+
+// ---------- 通用绘制 ----------
+const hov = (x,y,w,h) => mouse.x>=x && mouse.x<=x+w && mouse.y>=y && mouse.y<=y+h;
+function rrect(x,y,w,h,r){ ctx.beginPath(); ctx.moveTo(x+r,y); ctx.arcTo(x+w,y,x+w,y+h,r); ctx.arcTo(x+w,y+h,x,y+h,r); ctx.arcTo(x,y+h,x,y,r); ctx.arcTo(x,y,x+w,y,r); ctx.closePath(); }
+function glassPanel(x,y,w,h,{a=0.62, edge='rgba(255,255,255,.14)', glow=null, r=6}={}){
+  ctx.save();
+  if(glow){ ctx.shadowColor = glow; ctx.shadowBlur = 18; }
+  const g = ctx.createLinearGradient(0,y,0,y+h); g.addColorStop(0,`rgba(28,24,44,${a})`); g.addColorStop(1,`rgba(10,9,18,${a+0.1})`);
+  ctx.fillStyle = g; rrect(x,y,w,h,r); ctx.fill(); ctx.shadowBlur = 0;
+  ctx.strokeStyle = edge; ctx.lineWidth = glow ? 2 : 1; rrect(x+.5,y+.5,w-1,h-1,r); ctx.stroke();
+  ctx.restore();
+}
+function cube(x, y, w, h, d, top, front, side){   // 屏幕空间伪 3D 方块：前面 + 顶面 + 右侧面
+  ctx.fillStyle = front; ctx.fillRect(x, y, w, h);
+  ctx.fillStyle = top; ctx.beginPath(); ctx.moveTo(x,y); ctx.lineTo(x+d*0.6,y-d*0.5); ctx.lineTo(x+w+d*0.6,y-d*0.5); ctx.lineTo(x+w,y); ctx.closePath(); ctx.fill();
+  if(side){ ctx.fillStyle = side; ctx.beginPath(); ctx.moveTo(x+w,y); ctx.lineTo(x+w+d*0.6,y-d*0.5); ctx.lineTo(x+w+d*0.6,y+h-d*0.5); ctx.lineTo(x+w,y+h); ctx.closePath(); ctx.fill(); }
+}
+function bars(x, y, labels, vals, col, w=150){
+  labels.forEach((l,i)=>{ const yy = y + i*22;
+    txt(l, x, yy, 12, '#b8b0d0');
+    for(let k=0;k<5;k++){ const on = k < vals[i]; ctx.fillStyle = on ? col : 'rgba(255,255,255,.08)'; ctx.fillRect(x+44+k*((w-44)/5), yy-6, (w-44)/5-3, 10); if(on){ ctx.fillStyle='rgba(255,255,255,.25)'; ctx.fillRect(x+44+k*((w-44)/5), yy-6, (w-44)/5-3, 3); } }
+  });
+}
+function wrapText(s, x, y, maxW, size, col, lh){
+  ctx.font = `${size}px monospace`; let line = '', yy = y;
+  for(const ch of s){ if(ctx.measureText(line+ch).width > maxW){ txt(line, x, yy, size, col); line = ''; yy += lh; } line += ch; }
+  if(line) txt(line, x, yy, size, col); return yy + lh;
+}
+function navButton(x, y, w, h, label, kind, primary){
+  const on = hov(x,y,w,h);
+  UIK.button(x, y, w, h, label, {primary, hover:on, size: primary ? 17 : 14});
+  titleRects.push({x, y, w, h, kind});
+}
+function stepBar(){
+  const names = ['英雄','职业','装备'], cur = TITLE_STEPS.indexOf(TS.step), w = 360, x0 = VW/2 - w/2, y = 34;
+  ctx.strokeStyle = 'rgba(255,255,255,.15)'; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(x0, y); ctx.lineTo(x0+w, y); ctx.stroke();
+  ctx.strokeStyle = '#ffd860'; ctx.beginPath(); ctx.moveTo(x0, y); ctx.lineTo(x0 + w*cur/2, y); ctx.stroke();
+  names.forEach((n,i)=>{ const x = x0 + w*i/2, on = i<=cur;
+    ctx.fillStyle = i===cur ? '#ffd860' : on ? '#b89a40' : '#2a2638'; ctx.beginPath(); ctx.arc(x, y, i===cur ? 11 : 8, 0, 7); ctx.fill();
+    ctx.strokeStyle = on ? '#fff3c0' : 'rgba(255,255,255,.25)'; ctx.lineWidth = 1.5; ctx.stroke();
+    txt(String(i+1), x, y+1, 11, i===cur ? '#2a1a00' : '#ddd', 'center');
+    txt(n, x, y+24, 13, i===cur ? '#ffe08a' : on ? '#c8b070' : '#777', 'center');
+    titleRects.push({x:x-30, y:y-14, w:60, h:46, kind:'step', step:TITLE_STEPS[i]});
+  });
+}
+// 在屏幕坐标 (sx,sy) 绘制角色 rig，k 为缩放
+function heroAt(e, rigFn, sx, sy, k, z0=0){
+  const sox = ox, soy = oy; ox = sx - e.x*SX; oy = sy - e.y*SY;
+  const savedP = player; player = e;
+  try{ drawRig(e, rigFn(e), k, z0); } finally { player = savedP; ox = sox; oy = soy; }
+}
+function getHero(key, ck){
+  const h = titleHeroes[key] || (titleHeroes[key] = newPlayer());
+  h.char = ck; h.cls = CLASS_ORDER[selK]; return h;
+}
+function demoCombo(hero, wk, t, pause=0.5){
+  const W = WEAPONS[wk]; hero.weapon = wk;
+  const total = W.combo.reduce((s2,d)=>s2+d.w+d.act+d.rec,0) + pause, cyc = t % total;
+  let acc = 0, idx2 = 0, ph = 'rec', pt = 0;
+  for(let i=0;i<W.combo.length;i++){ const d = W.combo[i], tot = d.w+d.act+d.rec;
+    if(cyc < acc+tot || i===W.combo.length-1){ idx2 = i; const u = cyc-acc; if(u<d.w){ph='wind';pt=u;} else if(u<d.w+d.act){ph='act';pt=u-d.w;} else {ph='rec';pt=Math.min(u-d.w-d.act,d.rec);} break; }
+    acc += tot; }
+  const dd = W.combo[idx2]; Object.assign(hero, {st:'atk', atkDef:dd, ph, pt, T:{w:dd.w,act:dd.act,rec:dd.rec}, combo:idx2, speedFrac:0});
+}
+
+// ---------- 夜空 / 远景 ----------
+function drawNight(t, dim=0){
+  const sky = ctx.createLinearGradient(0,0,0,VH); sky.addColorStop(0,'#070a1e'); sky.addColorStop(0.45,'#141c46'); sky.addColorStop(0.7,'#1e2a5c'); sky.addColorStop(1,'#0c1024');
+  ctx.fillStyle = sky; ctx.fillRect(0,0,VW,VH);
+  for(let i=0;i<140;i++){ const x = hash(i,3)*VW, y = hash(i,7)*VH*0.55, tw = 0.4+0.6*Math.abs(Math.sin(t*(0.5+hash(i,9)*2)+i));
+    ctx.fillStyle = `rgba(230,235,255,${0.25+0.6*tw*hash(i,11)})`; const s = hash(i,5)<0.1 ? 2 : 1; ctx.fillRect(x|0, y|0, s, s); }
+  // 月亮
+  const mx = VW*0.78, my = VH*0.14; const mg = ctx.createRadialGradient(mx,my,0,mx,my,90); mg.addColorStop(0,'rgba(200,215,255,.35)'); mg.addColorStop(1,'rgba(200,215,255,0)');
+  ctx.fillStyle = mg; ctx.fillRect(mx-90,my-90,180,180); ctx.fillStyle = '#dfe6ff'; ctx.fillRect(mx-14,my-14,28,28); ctx.fillStyle = '#c4cdec'; ctx.fillRect(mx-6,my-8,7,6); ctx.fillRect(mx+4,my+3,5,5);
+  // 云带
+  for(let i=0;i<6;i++){ const y = VH*(0.08+i*0.055), x = ((t*6*(1+i*0.3) + hash(i,1)*VW*2) % (VW+600)) - 300;
+    ctx.fillStyle = `rgba(60,72,130,${0.18 - i*0.02})`; for(let k=0;k<5;k++) ctx.fillRect(x + k*48 - (k%2)*20, y + (k%3)*6, 90, 14); }
+  // 远山（三层阶梯体素剪影）
+  const layers = [['#1a2350',0.50,80,0.02],['#141b3e',0.58,110,0.05],['#0f1430',0.66,90,0.1]];
+  layers.forEach(([col, base, amp, par], li)=>{ ctx.fillStyle = col; const bw = 16 + li*6;
+    for(let x=-bw; x<VW+bw; x+=bw){ const n = Math.floor((x + 400)/bw), h = (Math.sin(n*0.23+li*3)*0.5+0.5)*amp*0.6 + hash(n,li+20)*amp*0.4;
+      ctx.fillRect(x, VH*base - h, bw+1, VH); } });
+  // 远处城堡与窗灯
+  const cx = VW*0.86, cb = VH*0.6; ctx.fillStyle = '#0d1230';
+  [[0,130,26],[34,92,40],[-30,74,22],[80,110,18]].forEach(([dx,h,w])=>{ ctx.fillRect(cx+dx, cb-h, w, h); for(let k=0;k<w;k+=8) ctx.fillRect(cx+dx+k, cb-h-6, 5, 6); });
+  for(let i=0;i<7;i++){ const on = Math.sin(t*0.7 + i*1.7) > -0.6; if(!on) continue; ctx.fillStyle = 'rgba(255,190,90,.75)'; ctx.fillRect(cx + [6,14,42,52,-22,86,8][i], cb - [100,60,70,40,50,80,30][i], 3, 4); }
+  // 湖面
+  const ly = VH*0.6; const lg = ctx.createLinearGradient(0,ly,0,ly+VH*0.08); lg.addColorStop(0,'#2a3a7a'); lg.addColorStop(1,'#141a3c'); ctx.fillStyle = lg; ctx.fillRect(0, ly, VW, VH*0.08);
+  for(let i=0;i<40;i++){ const x = (hash(i,31)*VW + t*8*(hash(i,33)-0.5)*4 + VW) % VW, y = ly + 4 + hash(i,32)*VH*0.07, a = 0.2+0.3*Math.abs(Math.sin(t*1.5+i));
+    ctx.fillStyle = `rgba(150,180,255,${a})`; ctx.fillRect(x, y, 6 + hash(i,34)*14, 1.5); }
+  if(dim){ ctx.fillStyle = `rgba(4,4,12,${dim})`; ctx.fillRect(0,0,VW,VH); }
+}
+function fireflies(t, n=26, area=[0,VH*0.35,VW,VH*0.6]){
+  ctx.save(); ctx.globalCompositeOperation = 'lighter';
+  for(let i=0;i<n;i++){ const x = area[0] + ((hash(i,41)*area[2] + Math.sin(t*0.3+i)*40 + t*6*(hash(i,44)-0.5)) % area[2] + area[2]) % area[2], y = area[1] + hash(i,42)*area[3] + Math.sin(t*0.8+i*2)*14, a = 0.5+0.5*Math.sin(t*2+i*3);
+    ctx.drawImage(SceneFX.glowSprite(255,180,80), x-8, y-8, 16, 16); ctx.fillStyle = `rgba(255,220,140,${a})`; ctx.fillRect(x-1, y-1, 2.5, 2.5); }
+  ctx.restore();
+}
+// ---------- 营火前景 ----------
+function drawCampfire(t, cx, gy, sc){
+  // 地面
+  const gg = ctx.createLinearGradient(0, gy-40*sc, 0, VH); gg.addColorStop(0,'#1d2a1a'); gg.addColorStop(0.3,'#2b2a1e'); gg.addColorStop(1,'#141410'); ctx.fillStyle = gg;
+  ctx.beginPath(); ctx.moveTo(0, gy-30*sc); for(let x=0;x<=VW;x+=24) ctx.lineTo(x, gy-30*sc - Math.sin(x*0.01)*8*sc - hash(x|0,5)*4); ctx.lineTo(VW, VH); ctx.lineTo(0, VH); ctx.fill();
+  // 右侧草方块台阶
+  const B = 34*sc;
+  for(let r=0;r<3;r++) for(let c=0;c<7-r*2;c++){ const x = cx + 120*sc + c*B + r*B, y = gy - 18*sc - r*B*0.75 - B;
+    cube(x, y, B, B + r*B*0.75, B*0.7, hash(c,r)<0.5 ? '#5f8a3a' : '#567f34', '#6a4a2e', '#4e3622');
+    ctx.fillStyle = '#4a7a2e'; ctx.fillRect(x, y, B, B*0.18); for(let k=0;k<4;k++) if(hash(c*4+k,r+9)<0.6) ctx.fillRect(x + k*B/4, y + B*0.18, B/8, B*0.12); }
+  // 左后方暗色树丛
+  for(let i=0;i<4;i++){   // 体素树：树干 + 三层树冠
+    const x = cx - 470*sc + i*95*sc + hash(i,63)*30*sc, hh = (70 + hash(i,61)*60)*sc, by2 = gy - 36*sc, B2 = 22*sc;
+    ctx.fillStyle = '#2a1c14'; ctx.fillRect(x - 7*sc, by2 - hh, 14*sc, hh);
+    for(let l=0;l<3;l++){ const w = (5-l*1.5)*B2, y = by2 - hh - l*B2*1.1;
+      for(let k=0;k<Math.round(w/B2);k++){ const c = hash(i*9+k,l) ; ctx.fillStyle = c<0.33 ? '#10261a' : c<0.66 ? '#163222' : '#0c1e14'; ctx.fillRect(x - w/2 + k*B2, y - B2, B2+1, B2+1); }
+      ctx.fillStyle = 'rgba(120,160,255,.06)'; ctx.fillRect(x - w/2, y - B2, w, 3*sc); } }
+  // 火光照地
+  const fl = 0.85 + 0.15*Math.sin(t*13) + 0.08*Math.sin(t*29);
+  const lr = 260*sc*fl; const lg = ctx.createRadialGradient(cx, gy, 0, cx, gy, lr); lg.addColorStop(0,'rgba(255,160,60,.45)'); lg.addColorStop(0.4,'rgba(255,120,40,.16)'); lg.addColorStop(1,'rgba(255,100,30,0)');
+  ctx.save(); ctx.globalCompositeOperation = 'lighter'; ctx.fillStyle = lg; ctx.fillRect(cx-lr, gy-lr, lr*2, lr*2); ctx.restore();
+  // 原木长椅
+  const bx = cx - 230*sc, by = gy - 30*sc;
+  cube(bx, by, 190*sc, 30*sc, 26*sc, '#8a5a34', '#6a4024', '#4a2c18');
+  ctx.fillStyle = 'rgba(0,0,0,.18)'; for(let k=0;k<6;k++) ctx.fillRect(bx + 10*sc + k*30*sc, by + 6*sc, 14*sc, 3*sc);
+  ctx.fillStyle = '#a8784a'; ctx.fillRect(bx+190*sc, by, 4*sc, 30*sc);
+  // 篝火：交叉原木 + 石圈
+  for(let k=0;k<8;k++){ const a = k/8*Math.PI*2, x = cx + Math.cos(a)*44*sc, y = gy + Math.sin(a)*14*sc; cube(x-8*sc, y-8*sc, 16*sc, 10*sc, 8*sc, '#7a7a80', '#5a5a62', '#46464e'); }
+  cube(cx-50*sc, gy-14*sc, 100*sc, 14*sc, 14*sc, '#7a4a28', '#5a3418', '#3e2410');
+  cube(cx-18*sc, gy-26*sc, 36*sc, 26*sc, 30*sc, '#6a3e20', '#4e2c14', '#38200e');
+  // 火焰（方块感：几层闪烁的体素火舌）
+  ctx.save(); ctx.globalCompositeOperation = 'lighter';
+  ctx.drawImage(SceneFX.glowSprite(255,140,40), cx-120*sc, gy-170*sc, 240*sc, 240*sc);
+  const cols = ['#ff3a10','#ff7a1a','#ffb030','#ffe080','#fff6d0'];
+  for(let layer=0; layer<5; layer++){ const w = (46 - layer*8)*sc;
+    for(let k=0;k<6;k++){ const ph = t*(7+layer*2) + k*1.7 + layer, h = (70 - layer*12)*sc*(0.65 + 0.35*Math.abs(Math.sin(ph))), x = cx - w/2 + (k/5)*w - 5*sc;
+      ctx.fillStyle = cols[layer]; ctx.globalAlpha = 0.55 + layer*0.08; ctx.fillRect(x, gy - 20*sc - h, 10*sc, h); } }
+  ctx.globalAlpha = 1; ctx.restore();
+  // 火星
+  if(TS.embers.length < 40 && Math.random() < 0.5) TS.embers.push({x:cx + rnd(-20,20)*sc, y:gy - 40*sc, vx:rnd(-12,12), vy:rnd(-60,-30), life:rnd(1.2,2.6), t:0});
+  ctx.save(); ctx.globalCompositeOperation = 'lighter';
+  for(const e of TS.embers){ e.t += 1/60; e.x += (e.vx + Math.sin(e.t*3+e.life)*14)/60*sc; e.y += e.vy/60*sc; const a = 1 - e.t/e.life;
+    ctx.fillStyle = `rgba(255,${170+60*a|0},80,${a})`; ctx.fillRect(e.x, e.y, 2.5*sc, 2.5*sc); }
+  ctx.restore(); TS.embers = TS.embers.filter(e => e.t < e.life);
+  return {benchX: bx, benchY: by};
+}
+function drawLogo(x, y, size, align='left'){
+  ctx.save(); ctx.shadowColor = 'rgba(255,180,60,.55)'; ctx.shadowBlur = 22;
+  txt('方块地牢', x, y, size, '#ffd870', align, '"Microsoft YaHei",sans-serif'); ctx.restore();
+  txt('B L O C K   D U N G E O N S', x + (align==='left' ? 4 : 0), y + size*0.72, Math.max(11, size*0.22), '#b8c4ff', align);
+}
+
+// ---------- ① 主菜单 ----------
+function titleMenuItems(){
+  const L = [{n:'开始游戏', k:'new', d:'选择英雄、职业与武器，开始新的冒险'}];
+  if(titleLastPick) L.push({n:'快速开始', k:'quick', d:`沿用上次：${CHAR_INFO[CHAR_ORDER[selC]].n} · ${CLASS_INFO[CLASS_ORDER[selK]].n} · ${WEAPONS[START_W[selW]].n}`});
+  L.push({n:'英雄', k:'hero', d:'查看并更换英雄外观'}, {n:'操作说明', k:'help', d:'键位与战斗技巧'}, {n:'设置', k:'settings', d:'音量与静音'});
+  return L;
+}
+function drawMenu(t){
+  drawNight(t);
+  fireflies(t, 30);
+  const sc = Math.min(VW/1280, VH/760) * 1.05, cx = VW*0.56, gy = VH*0.8;
+  const { benchX, benchY } = drawCampfire(t, cx, gy, sc);
+  // 坐在长椅上的英雄
+  const ck = CHAR_ORDER[selC], h = getHero('menu', ck);
+  Object.assign(h, {x:0, y:0, ang:1.1, st:'sit', weapon:'fist', speedFrac:0, sitLook:-0.05 + Math.sin(t*0.4)*0.08, sitTwist:Math.sin(t*0.27)*0.1});
+  const hx = benchX + 120*sc, hy = benchY + 12*sc;
+  ctx.fillStyle = 'rgba(0,0,0,.35)'; ctx.beginPath(); ctx.ellipse(hx, benchY+28*sc, 40*sc, 9*sc, 0, 0, 7); ctx.fill();
+  heroAt(h, playerRig, hx, hy, PX*4.2*sc, -0.5);
+  // 火光暖色叠加
+  ctx.save(); ctx.globalCompositeOperation = 'soft-light'; ctx.fillStyle = `rgba(255,140,60,${0.12 + 0.04*Math.sin(t*11)})`; ctx.fillRect(0,0,VW,VH); ctx.restore();
+  // 名牌
+  const C = CHAR_INFO[ck], K = CLASS_INFO[CLASS_ORDER[selK]], tagW = Math.max(150, UIK.measure(C.n, 15) + 50), tx = hx - tagW/2, ty = hy - 200*sc;
+  glassPanel(tx, ty, tagW, 30, {a:0.75, edge:'#d8b050'}); txt('♛ ' + C.n, hx, ty+15, 15, '#ffe8a0', 'center');
+  glassPanel(hx - 60, ty + 34, 120, 24, {a:0.75}); txt(`${K.ico} ${K.n}`, hx, ty+46, 13, K.col, 'center');
+  // 暗角
+  const vg = ctx.createRadialGradient(VW*0.5,VH*0.55,VH*0.3,VW*0.5,VH*0.55,VW*0.75); vg.addColorStop(0,'rgba(0,0,0,0)'); vg.addColorStop(1,'rgba(0,0,0,.6)'); ctx.fillStyle = vg; ctx.fillRect(0,0,VW,VH);
+  const lg2 = ctx.createLinearGradient(0,0,VW*0.45,0); lg2.addColorStop(0,'rgba(4,4,14,.75)'); lg2.addColorStop(1,'rgba(4,4,14,0)'); ctx.fillStyle = lg2; ctx.fillRect(0,0,VW*0.45,VH);
+  // Logo
+  drawLogo(64, VH*0.16, Math.min(66, VW/14));
+  // 左侧菜单（参考：竖线 + 大字，悬停高亮）
+  const items = titleMenuItems(), x0 = 72, y0 = VH*0.5, lh = Math.min(58, (VH*0.42)/items.length);
+  ctx.strokeStyle = 'rgba(255,255,255,.28)'; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(x0-22, y0-34); ctx.lineTo(x0-22, y0 + items.length*lh - 6); ctx.lineTo(x0+180, y0 + items.length*lh - 6); ctx.stroke();
+  ctx.fillStyle = 'rgba(255,255,255,.5)'; ctx.fillRect(x0-26, y0 + items.length*lh - 10, 8, 8);
+  items.forEach((it,i)=>{
+    const y = y0 + i*lh, w = 260, hit = hov(x0-10, y-lh*0.45, w, lh*0.9);
+    if(hit && TS.menuI!==i){ TS.menuI = i; if(window.SFX && SFX.lib) try{ SFX.lib.click(); }catch(e){} }
+    const on = TS.menuI===i, size = on ? lh*0.66 : lh*0.5;
+    if(on){ const g = ctx.createLinearGradient(x0-22,0,x0+w,0); g.addColorStop(0,'rgba(255,216,96,.22)'); g.addColorStop(1,'rgba(255,216,96,0)'); ctx.fillStyle = g; ctx.fillRect(x0-22, y-lh*0.42, w, lh*0.84);
+      ctx.fillStyle = '#ffd860'; ctx.fillRect(x0-24, y-lh*0.3, 4, lh*0.6); }
+    ctx.save(); if(on){ ctx.shadowColor = 'rgba(255,220,140,.6)'; ctx.shadowBlur = 12; }
+    txt(it.n, x0 + (on ? 6 : 0), y, size, on ? '#ffffff' : 'rgba(220,220,235,.62)', 'left', '"Microsoft YaHei",sans-serif'); ctx.restore();
+    titleRects.push({x:x0-10, y:y-lh*0.45, w, h:lh*0.9, kind:'menu', k:it.k});
+  });
+  const cur = items[TS.menuI] || items[0];
+  txt(cur.d, x0, y0 + items.length*lh + 18, 13, '#a8a0c8');
+  // 底部提示
+  txt('↑↓ 选择   Enter 确认   N 静音', 50, VH - 30, 13, '#8a86a8');
+  txt('v2 · 合成音效 · 法师技能组', VW - 40, VH - 30, 11, '#5a5878', 'right');
+}
+
+// ---------- ② 英雄选择 ----------
+function drawHeroSelect(t){
+  drawNight(t, 0.4); fireflies(t, 14, [0, VH*0.2, VW, VH*0.7]);
+  stepBar();
+  const ck = CHAR_ORDER[selC], C = CHAR_INFO[ck], tc = C.trail[0];
+  // 左：英雄列表
+  const lx = 40, ly = 92, cw = 250, chh = Math.min(108, (VH - 230)/4 - 10);
+  txt('选择英雄', lx, ly - 10, 20, '#ffe08a', 'left', '"Microsoft YaHei",sans-serif');
+  CHAR_ORDER.forEach((k,i)=>{
+    const y = ly + 14 + i*(chh+10), on = i===selC, I = CHAR_INFO[k], hit = hov(lx, y, cw, chh);
+    glassPanel(lx, y, cw, chh, {a: on ? 0.85 : 0.55, edge: on ? `rgb(${I.trail[0]})` : hit ? 'rgba(255,255,255,.4)' : 'rgba(255,255,255,.1)', glow: on ? `rgba(${I.trail[0]},.6)` : null});
+    // 头像（小号 rig）
+    const e = getHero('pv'+k, k); Object.assign(e, {x:0,y:0, ang:0.5, st:'move', speedFrac:0, weapon:'fist', walk:0});
+    ctx.save(); rrect(lx+8, y+8, chh-16, chh-16, 4); ctx.clip();
+    ctx.fillStyle = `rgba(${I.trail[0]},.18)`; ctx.fillRect(lx+8, y+8, chh-16, chh-16);
+    heroAt(e, playerRig, lx + chh/2, y + chh*1.45, PX*3.2, 0); ctx.restore();
+    txt(`${I.ico} ${I.n}`, lx + chh + 4, y + 26, 16, on ? '#fff' : '#d8d4e8');
+    txt(I.d[0], lx + chh + 4, y + 48, 11.5, '#a8a0c0');
+    txt(I.d[1], lx + chh + 4, y + 68, I.d[1].length > 14 ? 9.5 : 11, on ? '#ffb070' : '#8a8098');
+    txt(String(['7','8','9','0'][i]), lx + cw - 14, y + 14, 10, '#666', 'right');
+    titleRects.push({x:lx, y, w:cw, h:chh, kind:'c', i});
+  });
+  // 中：大号旋转展示
+  const cx = VW*0.5, base = VH*0.78;
+  if(!TS.drag) TS.rot += (0.35 + TS.rotV)*(1/60); TS.rotV *= 0.95;
+  const pg = ctx.createRadialGradient(cx, base, 0, cx, base, 220); pg.addColorStop(0,`rgba(${tc},.35)`); pg.addColorStop(1,`rgba(${tc},0)`); ctx.fillStyle = pg; ctx.fillRect(cx-220, base-220, 440, 300);
+  for(let r=0;r<3;r++){ ctx.fillStyle = ['#3a3450','#2c2840','#221e32'][r]; ctx.beginPath(); ctx.ellipse(cx, base + r*8, 150 - r*0, 34, 0, 0, 7); ctx.fill(); }
+  ctx.strokeStyle = `rgba(${tc},.8)`; ctx.lineWidth = 2; ctx.beginPath(); ctx.ellipse(cx, base, 150, 34, 0, 0, 7); ctx.stroke();
+  ctx.save(); ctx.globalCompositeOperation = 'lighter'; for(let i=0;i<18;i++){ const a = t*0.6 + i/18*6.28, y = base - ((t*40 + i*23) % 200); ctx.fillStyle = `rgba(${tc},${0.5*(1-(base-y)/200)})`; ctx.fillRect(cx + Math.cos(a)*120, y, 2.5, 2.5); } ctx.restore();
+  const hero = getHero('big', ck);
+  const cyc = t % 6;
+  if(cyc > 4.2){ demoCombo(hero, 'sword', cyc - 4.2, 0.2); } else Object.assign(hero, {st:'move', speedFrac:0, weapon:'fist'});
+  Object.assign(hero, {x:0, y:0, ang:TS.rot});
+  ctx.fillStyle = 'rgba(0,0,0,.4)'; ctx.beginPath(); ctx.ellipse(cx, base-2, 56, 13, 0, 0, 7); ctx.fill();
+  heroAt(hero, playerRig, cx, base - 4, PX*5.6, 0);
+  txt('◀ 拖动旋转 ▶', cx, base + 58, 11, '#777590', 'center');
+  // 左右切换箭头
+  [[-1,'◀'],[1,'▶']].forEach(([d,s])=>{ const x = cx + d*210 - 22, y = base - 160, hit = hov(x, y, 44, 44);
+    glassPanel(x, y, 44, 44, {a: hit ? 0.9 : 0.5, edge: hit ? '#ffd860' : 'rgba(255,255,255,.2)', r:22}); txt(s, x+22, y+22, 18, hit ? '#ffd860' : '#ddd', 'center');
+    titleRects.push({x, y, w:44, h:44, kind:'cstep', d}); });
+  // 右：信息面板
+  const rw = 300, rx = VW - rw - 40, ry = 92, rh = VH - 210;
+  glassPanel(rx, ry, rw, rh, {a:0.72, edge:`rgba(${tc},.6)`});
+  ctx.fillStyle = `rgb(${tc})`; ctx.fillRect(rx, ry, rw, 4);
+  txt(C.ico + ' ' + C.n, rx + 20, ry + 34, 24, '#fff', 'left', '"Microsoft YaHei",sans-serif');
+  txt(C.d[0], rx + 20, ry + 64, 13, '#c8c0e0');
+  txt('天赋加成', rx + 20, ry + 100, 14, '#ffe08a');
+  let yy = ry + 124;
+  for(const k in C.perk){ txt('◆ ' + perkTxt(k, C.perk[k]), rx + 24, yy, 13, '#ffb070'); yy += 22; }
+  txt('倾向', rx + 20, yy + 16, 14, '#ffe08a');
+  bars(rx + 24, yy + 42, ['力量','体质','敏捷','法力'], CHAR_RATE[ck] || [3,3,3,3], `rgb(${tc})`, rw - 60);
+  yy += 42 + 4*22 + 10;
+  txt('外观独立于职业，任何英雄都可选择任何职业。', rx + 20, Math.min(yy + 10, ry + rh - 20), 11, '#8a86a8');
+  // 底部导航
+  navButton(40, VH - 70, 150, 42, '◀ 返回 (Esc)', 'back', false);
+  navButton(VW - 300, VH - 72, 260, 46, '下一步：选择职业 ▶', 'next', true);
+}
+
+// ---------- ③ 职业选择 ----------
+function drawClassSelect(t){
+  const ck = CHAR_ORDER[selC], kk = CLASS_ORDER[selK], K = CLASS_INFO[kk];
+  drawNight(t, 0.38);
+  const col = K.col;
+  const bg = ctx.createRadialGradient(VW*0.36, VH*0.5, 0, VW*0.36, VH*0.5, VW*0.5); bg.addColorStop(0, col + '40'); bg.addColorStop(1, 'rgba(0,0,0,0)'); ctx.fillStyle = bg; ctx.fillRect(0,0,VW,VH);
+  stepBar();
+  // 中左：英雄演示职业武器连击
+  const cx = VW*0.33, base = VH*0.6;
+  for(let r=0;r<3;r++){ ctx.fillStyle = ['#3a3450','#2c2840','#221e32'][r]; ctx.beginPath(); ctx.ellipse(cx, base + r*7, 170, 38, 0, 0, 7); ctx.fill(); }
+  ctx.strokeStyle = col; ctx.lineWidth = 2; ctx.beginPath(); ctx.ellipse(cx, base, 170, 38, 0, 0, 7); ctx.stroke();
+  // 大号职业徽记（背景）
+  ctx.save(); ctx.globalAlpha = 0.1; ctx.font = '220px sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillStyle = '#fff'; ctx.fillText(K.ico, cx, base - 170); ctx.restore();
+  const hero = getHero('cls', ck); hero.cls = kk;
+  const wk = CLASS_WEAPON[kk]; demoCombo(hero, wk, t*0.9, 0.8); Object.assign(hero, {x:0, y:0, ang:0.55 + Math.sin(t*0.3)*0.15});
+  ctx.fillStyle = 'rgba(0,0,0,.4)'; ctx.beginPath(); ctx.ellipse(cx, base-2, 54, 12, 0, 0, 7); ctx.fill();
+  heroAt(hero, playerRig, cx, base - 4, PX*5.0, 0);
+  txt(`演示武器：${WEAPON_ICO[wk]} ${WEAPONS[wk].n}`, cx, base + 58, 12, '#9a96b8', 'center');
+  // 底部：五个职业卡
+  const n = CLASS_ORDER.length, gap = 12, cw = Math.min(150, (VW*0.62 - gap*(n-1))/n), chh = 96, x0 = cx - (cw*n + gap*(n-1))/2, y = VH - 210;
+  CLASS_ORDER.forEach((k,i)=>{
+    const I = CLASS_INFO[k], on = i===selK, x = x0 + i*(cw+gap), hit = hov(x, y, cw, chh), yy = y - (on ? 8 : hit ? 3 : 0);
+    glassPanel(x, yy, cw, chh, {a: on ? 0.9 : 0.55, edge: on ? I.col : hit ? 'rgba(255,255,255,.4)' : 'rgba(255,255,255,.1)', glow: on ? I.col : null});
+    ctx.fillStyle = I.col + (on ? 'ff' : '66'); ctx.fillRect(x, yy, cw, 3);
+    ctx.save(); ctx.font = '30px sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.globalAlpha = on ? 1 : 0.7; ctx.fillText(I.ico, x + cw/2, yy + 30); ctx.restore();
+    txt(I.n, x + cw/2, yy + 60, 16, on ? '#fff' : '#ccc', 'center', '"Microsoft YaHei",sans-serif');
+    txt(CLASS_ROLE[k], x + cw/2, yy + 80, 10.5, on ? I.col : '#888', 'center');
+    titleRects.push({x, y:yy, w:cw, h:chh, kind:'k', i});
+  });
+  txt('Tab / ← → 切换职业', cx, y + chh + 16, 11, '#777590', 'center');
+  // 右：详情面板
+  const rw = Math.min(380, VW*0.32), rx = VW - rw - 40, ry = 92, rh = VH - 210;
+  glassPanel(rx, ry, rw, rh, {a:0.75, edge: col + 'aa'}); ctx.fillStyle = col; ctx.fillRect(rx, ry, rw, 4);
+  ctx.save(); ctx.font = '34px sans-serif'; ctx.textBaseline = 'middle'; ctx.fillText(K.ico, rx + 20, ry + 38); ctx.restore();
+  txt(K.n, rx + 66, ry + 32, 26, '#fff', 'left', '"Microsoft YaHei",sans-serif');
+  txt(CLASS_ROLE[kk], rx + 66, ry + 58, 12, col);
+  let yy = ry + 92;
+  txt('职业加成', rx + 20, yy, 14, '#ffe08a'); yy += 22;
+  for(const k in K.perk){ txt('◆ ' + perkTxt(k, K.perk[k]), rx + 24, yy, 12.5, '#e8d8b0'); yy += 19; }
+  const gk = Object.keys(K.grow).map(k => perkTxt(k, K.grow[k])).join('，');
+  txt('每级成长：' + gk, rx + 24, yy + 2, 11.5, '#9ad8a0'); yy += 30;
+  txt('专属技能 · Q', rx + 20, yy, 14, '#ffe08a'); yy += 10;
+  glassPanel(rx + 16, yy, rw - 32, 64, {a:0.5, edge: col + '66'});
+  ctx.save(); ctx.font = '26px sans-serif'; ctx.textBaseline = 'middle'; ctx.fillText(K.sk.ico, rx + 28, yy + 32); ctx.restore();
+  txt(K.sk.n, rx + 66, yy + 18, 15, '#fff');
+  txt(`冷却 ${K.sk.cd}s${K.sk.mana ? ' · 法力 ' + K.sk.mana : ''}${K.sk.sta ? ' · 耐力 ' + K.sk.sta : ''}`, rx + rw - 28, yy + 18, 11, '#a8a0c8', 'right');
+  wrapText(K.sk.d, rx + 66, yy + 42, rw - 100, 11.5, '#c8c0e0', 15);
+  yy += 80;
+  if(kk === 'mage'){
+    txt('法术书 · 4 5 6', rx + 20, yy, 14, '#ffe08a'); yy += 20;
+    MAGE_SK.forEach(S => { txt(`${S.ico} ${S.n}`, rx + 24, yy, 12.5, S.col); txt(S.lvl > 1 ? `Lv.${S.lvl} 解锁` : '初始', rx + rw - 28, yy, 11, '#8a86a8', 'right'); yy += 19; });
+    txt('⚠ 法师只能使用法杖', rx + 24, yy + 4, 11.5, '#ffb070'); yy += 26;
+  }
+  txt('能力', rx + 20, yy, 14, '#ffe08a');
+  bars(rx + 24, yy + 24, ['攻击','防御','速度','射程','续航'], CLASS_RATE[kk], col, rw - 60); yy += 24 + 5*22;
+  txt('推荐武器：' + CLASS_REC[kk].map(w => WEAPON_ICO[w] + WEAPONS[w].n).join('  '), rx + 20, Math.min(yy + 6, ry + rh - 16), 12, '#c8c0e0');
+  navButton(40, VH - 70, 150, 42, '◀ 返回 (Esc)', 'back', false);
+  navButton(VW - 300, VH - 72, 260, 46, '下一步：选择装备 ▶', 'next', true);
+}
+
+// ---------- ④ 装备确认 ----------
+function drawLoadout(t){
+  if(CLASS_ORDER[selK]==='mage' && START_W[selW]!=='staff') selW = START_W.indexOf('staff');
+  const ck = CHAR_ORDER[selC], kk = CLASS_ORDER[selK], K = CLASS_INFO[kk], wk = START_W[selW];
+  drawNight(t, 0.42); stepBar();
+  // 左：英雄挥舞所选武器
+  const cx = VW*0.22, base = VH*0.56;
+  for(let r=0;r<3;r++){ ctx.fillStyle = ['#3a3450','#2c2840','#221e32'][r]; ctx.beginPath(); ctx.ellipse(cx, base + r*7, 140, 32, 0, 0, 7); ctx.fill(); }
+  ctx.strokeStyle = '#ffd860'; ctx.lineWidth = 1.5; ctx.beginPath(); ctx.ellipse(cx, base, 140, 32, 0, 0, 7); ctx.stroke();
+  const hero = getHero('lo', ck); hero.cls = kk; demoCombo(hero, wk, t, 0.5); Object.assign(hero, {x:0, y:0, ang:0.6});
+  ctx.fillStyle = 'rgba(0,0,0,.4)'; ctx.beginPath(); ctx.ellipse(cx, base-2, 50, 11, 0, 0, 7); ctx.fill();
+  heroAt(hero, playerRig, cx, base - 4, PX*4.8, 0);
+  // 摘要
+  const sy = base + 60; glassPanel(cx - 150, sy, 300, 104, {a:0.7});
+  txt(`${CHAR_INFO[ck].ico} ${CHAR_INFO[ck].n}`, cx - 134, sy + 22, 14, '#fff');
+  txt(`${K.ico} ${K.n} · ${K.sk.n}`, cx - 134, sy + 46, 13, K.col);
+  txt(`${WEAPON_ICO[wk]} ${WEAPONS[wk].n}`, cx - 134, sy + 70, 13, '#e8d8b0');
+  txt(`${SPELLS[START_M[selM]].ico} ${SPELLS[START_M[selM]].n}`, cx - 134, sy + 92, 13, SPELLS[START_M[selM]].col || '#c8c0ff');
+  // 右：武器 + 魔法
+  const rx = VW*0.42, rw = VW - rx - 40;
+  txt('选择武器', rx, 92, 18, '#ffe08a', 'left', '"Microsoft YaHei",sans-serif');
+  txt('1 2 3 / ← →', rx + rw, 92, 11, '#777590', 'right');
+  const wcw = (rw - 2*12)/3, wch = 80;
+  START_W.forEach((w,i)=>{
+    const x = rx + (i%3)*(wcw+12), y = 108 + Math.floor(i/3)*(wch+10), on = i===selW, lock = kk==='mage' && w!=='staff', hit = hov(x,y,wcw,wch);
+    glassPanel(x, y, wcw, wch, {a: on ? 0.9 : lock ? 0.35 : 0.55, edge: on ? '#ffd860' : hit && !lock ? 'rgba(255,255,255,.4)' : 'rgba(255,255,255,.1)', glow: on ? 'rgba(255,216,96,.5)' : null});
+    ctx.save(); if(lock) ctx.globalAlpha = 0.35;
+    txt(`${WEAPON_ICO[w]} ${WEAPONS[w].n}`, x + 12, y + 20, 15, on ? '#ffe08a' : '#eee');
+    (START_W_D[w]||[]).slice(1,3).forEach((l,j)=>txt(l, x + 12, y + 42 + j*17, 11, j===1 ? '#ffb070' : '#b8b0d0'));
+    if(CLASS_REC[kk].includes(w) && !lock){ txt('推荐', x + wcw - 10, y + 16, 10, K.col, 'right'); }
+    ctx.restore(); if(lock) txt('🔒 法师不可用', x + wcw - 10, y + wch - 12, 10.5, '#ff9a7a', 'right');
+    if(!lock) titleRects.push({x, y, w:wcw, h:wch, kind:'w', i});
+  });
+  const my = 108 + 2*(wch+10) + 26;
+  txt('选择魔法 · R', rx, my, 18, '#ffe08a', 'left', '"Microsoft YaHei",sans-serif'); txt('4 5 6 / ↑ ↓', rx + rw, my, 11, '#777590', 'right');
+  START_M.forEach((m,i)=>{
+    const S = SPELLS[m], x = rx + i*(wcw+12), y = my + 16, on = i===selM, hit = hov(x, y, wcw, 74);
+    glassPanel(x, y, wcw, 74, {a: on ? 0.9 : 0.55, edge: on ? (S.col||'#c8a0ff') : hit ? 'rgba(255,255,255,.4)' : 'rgba(255,255,255,.1)', glow: on ? (S.col||'#c8a0ff') : null});
+    txt(`${S.ico} ${S.n}`, x + 12, y + 20, 15, on ? '#fff' : '#ddd');
+    S.d.slice(0,2).forEach((l,j)=>txt(l, x + 12, y + 40 + j*15, 11, '#b8b0d0'));
+    txt(`法力 ${S.cost}`, x + wcw - 10, y + 16, 10, '#8fb0ff', 'right');
+    titleRects.push({x, y, w:wcw, h:74, kind:'m', i});
+  });
+  { const n0 = titleRects.length, dx = (rx + rw/2) - VW/2; ctx.save(); ctx.translate(dx, 0); const smx = mouse.x; mouse.x -= dx;
+    try{ drawWeaponStylePicker(my + 130); } finally { ctx.restore(); mouse.x = smx; }
+    for(let i=n0;i<titleRects.length;i++) titleRects[i].x += dx; }
+  navButton(40, VH - 70, 150, 42, '◀ 返回 (Esc)', 'back', false);
+  navButton(VW - 320, VH - 74, 280, 50, '▶ 开始冒险 (Enter)', 'start', true);
+}
+
+// ---------- 浮层：设置 / 操作说明 ----------
+function drawTitleOverlay(){
+  ctx.fillStyle = 'rgba(0,0,0,.6)'; ctx.fillRect(0,0,VW,VH);
+  const w = TS.overlay==='help' ? 640 : 420, h = TS.overlay==='help' ? 420 : 230, x = VW/2 - w/2, y = VH/2 - h/2;
+  glassPanel(x, y, w, h, {a:0.92, edge:'#ffd860'});
+  titleRects.push({x:0, y:0, w:VW, h:VH, kind:'ovbg'});
+  titleRects.push({x, y, w, h, kind:'ovpanel'});
+  if(TS.overlay==='settings'){
+    txt('设置', x + 24, y + 34, 22, '#ffe08a', 'left', '"Microsoft YaHei",sans-serif');
+    const v = window.SFX ? SFX.vol : 0.6, muted = window.SFX && SFX.muted;
+    txt('音效音量', x + 24, y + 86, 14, '#ddd');
+    const bx = x + 120, bw = w - 200, by = y + 80; ctx.fillStyle = 'rgba(255,255,255,.12)'; ctx.fillRect(bx, by, bw, 10); ctx.fillStyle = '#ffd860'; ctx.fillRect(bx, by, bw*v, 10);
+    ctx.fillStyle = '#fff'; ctx.fillRect(bx + bw*v - 5, by - 5, 10, 20);
+    txt(Math.round(v*100) + '%', x + w - 30, y + 86, 13, '#ddd', 'right');
+    titleRects.push({x:bx-6, y:by-10, w:bw+12, h:30, kind:'vol', bx, bw});
+    txt('静音', x + 24, y + 134, 14, '#ddd');
+    const tx2 = x + 120, ty2 = y + 122, on = !muted; glassPanel(tx2, ty2, 64, 26, {a:0.6, edge: on ? '#7affaa' : '#ff7a7a', r:13});
+    ctx.fillStyle = on ? '#7affaa' : '#ff7a7a'; ctx.beginPath(); ctx.arc(on ? tx2 + 50 : tx2 + 14, ty2 + 13, 9, 0, 7); ctx.fill();
+    txt(on ? '开' : '关', tx2 + 80, ty2 + 13, 13, '#ddd');
+    titleRects.push({x:tx2, y:ty2, w:64, h:26, kind:'mute'});
+    txt('游戏中：N 静音 · [ ] 调音量', x + 24, y + h - 26, 11, '#8a86a8');
+  } else {
+    txt('操作说明', x + 24, y + 34, 22, '#ffe08a', 'left', '"Microsoft YaHei",sans-serif');
+    const L = [['移动','WASD'],['连击','鼠标左键'],['射箭（蓄力）','鼠标右键'],['魔法','R / 鼠标中键'],['翻滚 / 奔跑','Shift（按住奔跑）'],['冲刺斩','翻滚中按左键'],['跳跃','空格'],['职业技能','Q'],['神器','1 2 3'],['法师技能','4 5 6'],['药水','E'],['拾取','F'],['背包 / 地图','I / M'],['换武器组','X'],['显示掉落','Alt'],['缩放','滚轮 / - =']];
+    L.forEach(([a,b],i)=>{ const col = i%2, row = Math.floor(i/2), xx = x + 30 + col*(w/2 - 10), yy = y + 76 + row*34;
+      txt(a, xx, yy, 13, '#c8c0e0'); glassPanel(xx + 110, yy - 12, Math.max(60, UIK.measure(b, 12) + 20), 24, {a:0.6, r:4}); txt(b, xx + 120, yy, 12, '#ffe8a0'); });
+    txt('技巧：从背后攻击触发背刺 · 翻滚闪避有无敌帧 · 打断敌人前摇可造成硬直', x + w/2, y + h - 24, 11.5, '#9ad8a0', 'center');
+  }
+  txt('Esc / 点击外部关闭', x + w - 20, y + 30, 11, '#777590', 'right');
+}
+
+// ---------- 入口 ----------
+function drawTitle(){
+  const t = performance.now()/1000;
+  titleRects = [];
+  ox = VW/2; oy = VH*0.13;
+  if(TS.step==='menu') drawMenu(t);
+  else if(TS.step==='hero') drawHeroSelect(t);
+  else if(TS.step==='class') drawClassSelect(t);
+  else drawLoadout(t);
+  if(TS.overlay) drawTitleOverlay();
+  if(TS.fadeT < 1){ TS.fadeT = Math.min(1, (t - TS.t0)/0.25); ctx.fillStyle = `rgba(4,4,12,${1-TS.fadeT})`; ctx.fillRect(0,0,VW,VH); }
+}
+function titleKey(e){
+  if(TS.overlay){ if(e.code==='Escape' || e.code==='Enter') TS.overlay = null; return; }
+  if(e.code==='Escape' || e.code==='Backspace'){ titleBack(); return; }
+  const st = TS.step;
+  if(st==='menu'){
+    const items = titleMenuItems();
+    if(e.code==='ArrowUp' || e.code==='KeyW'){ TS.menuI = (TS.menuI + items.length - 1) % items.length; SFX && SFX.lib && SFX.lib.click(); }
+    if(e.code==='ArrowDown' || e.code==='KeyS'){ TS.menuI = (TS.menuI + 1) % items.length; SFX && SFX.lib && SFX.lib.click(); }
+    if(e.code==='Enter' || e.code==='Space') titleMenuPick(items[TS.menuI].k);
+    return;
+  }
+  if(e.code==='Enter' || e.code==='Space'){ e.preventDefault(); titleNext(); return; }
+  if(st==='hero'){
+    const c4 = {Digit7:0,Digit8:1,Digit9:2,Digit0:3,Digit1:0,Digit2:1,Digit3:2,Digit4:3}[e.code]; if(c4!==undefined) selC = c4;
+    if(e.code==='ArrowLeft' || e.code==='KeyA' || e.code==='ArrowUp') selC = (selC+3)%4;
+    if(e.code==='ArrowRight' || e.code==='KeyD' || e.code==='ArrowDown') selC = (selC+1)%4;
+  } else if(st==='class'){
+    const n = CLASS_ORDER.length, d = {Digit1:0,Digit2:1,Digit3:2,Digit4:3,Digit5:4}[e.code]; if(d!==undefined) selK = d;
+    if(e.code==='Tab'){ e.preventDefault(); selK = (selK + (e.shiftKey ? n-1 : 1)) % n; }
+    if(e.code==='ArrowLeft' || e.code==='KeyA') selK = (selK+n-1)%n; if(e.code==='ArrowRight' || e.code==='KeyD') selK = (selK+1)%n;
+  } else {
+    const mage = CLASS_ORDER[selK]==='mage';
+    const w = {Digit1:0,Digit2:1,Digit3:2}[e.code], m = {Digit4:0,Digit5:1,Digit6:2}[e.code];
+    if(!mage){ if(w!==undefined) selW = Math.min(START_W.length-1, Math.floor(selW/3)*3 + w);
+      if(e.code==='ArrowLeft') selW = (selW+START_W.length-1)%START_W.length; if(e.code==='ArrowRight') selW = (selW+1)%START_W.length; }
+    if(m!==undefined) selM = m;
+    if(e.code==='ArrowUp') selM = (selM+2)%3; if(e.code==='ArrowDown') selM = (selM+1)%3;
+    if(e.code==='KeyV') cycleWeaponStyle();
+  }
+}
+function titleMenuPick(k){
+  if(k==='new') titleGo('hero');
+  else if(k==='quick') titleStart();
+  else if(k==='hero') titleGo('hero');
+  else TS.overlay = k;
+  if(window.SFX && SFX.lib) try{ SFX.lib.click(); }catch(e){}
+}
+function titleClick(mxu, myu){
+  if(TS.overlay){
+    const ov = titleRects.filter(r=>mxu>=r.x && mxu<=r.x+r.w && myu>=r.y && myu<=r.y+r.h);
+    const top = ov.find(r=>r.kind==='vol' || r.kind==='mute');
+    if(top && top.kind==='vol' && window.SFX){ SFX.setVol((mxu - top.bx)/top.bw); if(SFX.muted) SFX.toggle(); SFX.lib.click(); }
+    else if(top && top.kind==='mute' && window.SFX){ SFX.toggle(); }
+    else if(!ov.some(r=>r.kind==='ovpanel')) TS.overlay = null;
+    return;
+  }
+  const hit = [...titleRects].reverse().find(r=>mxu>=r.x && mxu<=r.x+r.w && myu>=r.y && myu<=r.y+r.h);
+  if(!hit){ if(TS.step==='hero'){ TS.drag = {x:mxu, rot:TS.rot}; } return; }
+  const k = hit.kind, click = () => { if(window.SFX && SFX.lib) try{ SFX.lib.click(); }catch(e){} };
+  if(k==='menu') titleMenuPick(hit.k);
+  else if(k==='c'){ selC = hit.i; click(); }
+  else if(k==='cstep'){ selC = (selC + hit.d + 4) % 4; click(); }
+  else if(k==='k'){ selK = hit.i; click(); }
+  else if(k==='w'){ selW = hit.i; click(); }
+  else if(k==='m'){ selM = hit.i; click(); }
+  else if(k==='style') setWeaponStyle(hit.style);
+  else if(k==='gallery') location.href = 'weapon-gallery-v4.html';
+  else if(k==='back') titleBack();
+  else if(k==='next') titleNext();
+  else if(k==='start') titleStart();
+  else if(k==='step'){ const ti = TITLE_STEPS.indexOf(hit.step), ci = TITLE_STEPS.indexOf(TS.step); if(ti <= ci) titleGo(hit.step); }
+}
+addEventListener('mousemove', e => { if(state==='title' && TS.drag && mouse.l){ const us = US(); const dx = mouse.x/us - TS.drag.x; TS.rot = TS.drag.rot + dx*0.012; TS.rotV = 0; } });
+addEventListener('mouseup', () => { if(TS.drag){ TS.drag = null; TS.rotV = 0.4; } });
+
 function drawUpgrade(){
   ctx.fillStyle='rgba(0,0,0,.72)'; ctx.fillRect(0,0,VW,VH);
   txt(`第 ${floorN} 层 已完成`, VW/2, VH*0.16, 34, '#ffe08a', 'center');
