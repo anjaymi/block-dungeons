@@ -928,7 +928,7 @@ const HELM_STY = {
   leaf:(o,c1,c2)=>{ for(let i=0;i<8;i++){ const a = i/8*Math.PI*2; o([Math.cos(a)*5.4,Math.sin(a)*5.9,HELM_TOP-0.2+(i%2)*0.5],[1.8,1.8,1.2],i%3?c1:c2); } },
   skull:(o,c1,c2)=>{ o([0.5,-6.6,8.4],[3,1,3],c1); o([1.4,-7.2,8.8],[0.6,0.4,0.7],'#202020'); o([-0.4,-7.2,8.8],[0.6,0.4,0.7],'#202020'); for(const s of [1,-1]) o([-1,s*4,HELM_TOP+1],[1.2,1.2,2.4],c1); },
   crown:(o,c1,c2)=>{ o([0,0,HELM_TOP+0.6],[8.4,8.4,1.2],c1); for(const [x,y] of [[4,0],[-4,0],[0,4],[0,-4],[3,3],[-3,3],[3,-3],[-3,-3]]) o([x,y,HELM_TOP+1.8],[1,1,1.4],c1); o([4.3,0,HELM_TOP+0.6],[0.4,1.2,1.2],c2); },
-  hood:(o,c1,c2)=>{ o([-1.2,0,HELM_TOP-1.4],[10.6,13,3.4],c1); o([-5.6,0,5],[1.6,13,9],c1); o([4.6,0,HELM_TOP-0.6],[1.2,12.6,1.6],c2); },
+  hood:(o,c1,c2,t,base)=>{ const d = base ? '#4a5a34' : c1; o([-1.2,0,HELM_TOP-1.4],[10.6,13,3.4],d); o([-5.6,0,5],[1.6,13,9],d); o([-3,0,HELM_TOP+1.4],[5,7,2],d); o([-5,0,HELM_TOP+2.6],[2.6,3.6,2],d); o([4.6,0,HELM_TOP-0.6],[1.2,12.6,1.6],c2); },
   shell:(o,c1,c2)=>{ o([0,-6.7,9.4],[3,0.8,2.6],c1); o([0,-6.9,10.6],[2,0.6,1],c2); o([0,-6.9,8.4],[0.6,0.6,0.6],'#ffffff'); },
   mask:(o,c1,c2)=>{ o([5.4,0,2.6],[0.6,9.4,3],c1); o([5.6,0,3.6],[0.4,8,0.4],c2); },
   dragon:(o,c1,c2)=>{ for(const s of [1,-1]){ o([-1.4,s*4.2,HELM_TOP+0.8],[2.4,1.6,1.6],c1); o([-3,s*4.6,HELM_TOP+1.6],[2,1.2,1.2],c1); o([-4.4,s*4.8,HELM_TOP+2.4],[1.4,0.8,0.8],c2); } o([5.6,0,HELM_TOP-1.6],[0.5,1.2,1.2],c2,1); },
@@ -971,7 +971,7 @@ function gearVis(p){
 }
 function gearOverlay(md, Bn, g, out){
   const t = performance.now()/1000;
-  if(g.helm && !(g.helm.helm==='witch' && md.byName.s_hat!==undefined)){ const H = mul(Bn('head'), [0.8,0,0, 0,0.8,0, 0,0,0.8, 0,0,-0.4]); const st = HELM_STY[g.helm.helm] || HELM_STY.circlet; st((c,s2,col,gl)=>out.push(BX(H,c,s2,col,gl)), g.helm.c1, g.helm.c2, t); if(g.helm.gem) out.push(BX(H,[6.1,0,HELM_TOP-1.4],[0.5,1.4,1.4],g.helm.c2,true)); }
+  if(g.helm && !(g.helm.helm==='witch' && md.byName.s_hat!==undefined)){ const H = mul(Bn('head'), [0.8,0,0, 0,0.8,0, 0,0,0.8, 0,0,-0.4]); const st = HELM_STY[g.helm.helm] || HELM_STY.circlet; st((c,s2,col,gl)=>out.push(BX(H,c,s2,col,gl)), g.helm.c1, g.helm.c2, t, g.helm.base); if(g.helm.gem) out.push(BX(H,[6.1,0,HELM_TOP-1.4],[0.5,1.4,1.4],g.helm.c2,true)); }
   if(g.armor){ for(const sd of [1,-1]){ const A = Bn(sd>0?'arm_r':'arm_l'); out.push(BX(A,[0,0,1.7],[4.8,4.2,1.4],g.armor.c1), BX(A,[0,0,2.5],[4.2,3.6,0.5],g.armor.c2)); }
     const B = Bn('body'); out.push(BX(B,[2.35,0,9],[0.4,2.4,2.4],g.armor.c1), BX(B,[2.55,0,9],[0.3,1.1,1.1],g.armor.c2,true));
     if(g.armor.base){ const T = g.armor.tier; out.push(BX(B,[0,0,7.4],[5.4,9.4,T>0?8:6.6],g.armor.c1), BX(B,[0,0,3.6],[5.6,9.6,0.8],g.armor.c2)); for(const sd of [1,-1]){ const A = Bn(sd>0?'arm_r':'arm_l'); out.push(BX(A,[0,0,2.2],[5.4+T*0.4,4.8+T*0.4,2.4+T*0.6],g.armor.c1), BX(A,[0,0,3.6+T*0.3],[5+T*0.4,4.4+T*0.4,0.5],g.armor.c2)); }
@@ -1916,6 +1916,10 @@ function itemLines(it){
     if(W.tip)L3.push([W.tip,'#b8ccdf']);
     if(window.WeaponModels){ const sid = WeaponModels.styleOf(it), S = WeaponModels.STYLES[sid], skin = WeaponModels.designName ? WeaponModels.designName(W.kind,sid) : S.name; L3.push([`外观：${S.name} · ${skin}（${TIER_N[it.tier||0]}，V 切换）`, S.accent]); }
   }
+  { const bv = ['helm','armor','boots'].includes(it.type) && !(it.q==='set' || it.q==='unique') ? baseVis(it, it.type) : null;
+    if(bv){ const ARM_VN = [['皮甲','斜挎皮甲','护背皮甲'],['链甲','斜挎链甲','护背链甲'],['板甲','斜挎板甲','护背板甲']], BOOT_VN = ['短靴','高筒靴','护趾靴'];
+      const nm = it.type==='helm' ? HELM_VN[bv.helm] : it.type==='armor' ? ARM_VN[bv.tier][bv.v] : BOOT_VN[bv.v];
+      L3.push([`外观：${nm}${bv.gem ? ' · 宝石' : ''}${(rawSkin || hideVis[it.type]) ? '（已隐藏）' : ''}`, '#d8b8ff']); } }
   if(it.def!==undefined){ const d = itemDef(it,S); L3.push([`防御：${d}`, d!==it.def ? QCOL.magic : '#fff']); }
   if(it.block) L3.push([`格挡几率：${it.block + (S.block||0)}%`, '#fff']);
   const r = itemReq(it), G = player.G || {};
