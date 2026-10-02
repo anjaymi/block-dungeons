@@ -934,12 +934,27 @@ const HELM_STY = {
   dragon:(o,c1,c2)=>{ for(const s of [1,-1]){ o([-1.4,s*4.2,HELM_TOP+0.8],[2.4,1.6,1.6],c1); o([-3,s*4.6,HELM_TOP+1.6],[2,1.2,1.2],c1); o([-4.4,s*4.8,HELM_TOP+2.4],[1.4,0.8,0.8],c2); } o([5.6,0,HELM_TOP-1.6],[0.5,1.2,1.2],c2,1); },
   halo:(o,c1,c2,t)=>{ const z = HELM_TOP+3+Math.sin(t*2)*0.5; o([0,0,z],[8,1,0.6],c2,1); o([0,4,z],[1,8,0.6],c2,1); o([0,-4,z],[1,8,0.6],c2,1); o([4,0,z],[1,7,0.6],c2,1); o([-4,0,z],[1,7,0.6],c2,1); },
   goggles:(o,c1,c2)=>{ o([0.6,0,HELM_TOP-1],[10.8,12,1.2],'#3a2a1a'); for(const s of [1,-1]){ o([5.6,s*2.4,HELM_TOP-0.8],[1,2.6,2.2],c1); o([6.1,s*2.4,HELM_TOP-0.8],[0.3,1.8,1.4],'#9ae8ff',1); } },
+  cap:(o,c1,c2)=>{ o([-0.4,0,HELM_TOP-0.6],[10.4,10.6,2.6],c1); o([4.8,0,HELM_TOP-1.6],[0.8,10.6,0.8],c2); },
+  chainhood:(o,c1,c2)=>{ o([-0.6,0,HELM_TOP-1],[10.8,11.2,3.2],c1); for(const s of [1,-1]) o([-0.6,s*5.4,4.6],[10.4,0.8,7],c1); o([-5.2,0,4.6],[0.8,11,7],c1); o([5.1,0,HELM_TOP-2.2],[0.6,11,0.8],c2); },
+  greathelm:(o,c1,c2)=>{ o([0,0,HELM_TOP-1.2],[11.4,11.4,3.6],c1); for(const s of [1,-1]) o([0,s*5.6,3.6],[11,0.8,8],c1); o([-5.6,0,3.6],[0.8,11,8],c1); o([5.6,0,1.6],[0.8,11,4],c1); o([5.9,0,4.6],[0.4,9,0.6],'#151515'); o([0,0,HELM_TOP+0.9],[7,1,1.4],c2); },
   circlet:(o,c1,c2)=>{ o([0.4,0,HELM_TOP-1.4],[10.8,12,0.7],c1); o([5.8,0,HELM_TOP-1.2],[0.4,1,1],c2,1); },
 };
+// —— 换装：头盔 / 胸甲 / 靴子 按材质档位 + 品质 默认外观；O 键或设置里「显示原皮」 ——
+let rawSkin = localStorage.getItem('bd_rawskin') === '1';
+function setRawSkin(v){ rawSkin = !!v; localStorage.setItem('bd_rawskin', rawSkin ? '1' : '0'); if(typeof player !== 'undefined' && player) recalc(); }
+const TIER_MAT = ['#7a5232', '#8e959e', '#c9ced8'];           // 皮 / 链 / 板
+const Q_ACC = {normal:'#5a4a3a', magic:'#5a7aff', rare:'#f0d040', unique:'#ffb040', set:'#40e070', runeword:'#e0c890'};
+const TIER_HELM = ['cap', 'chainhood', 'greathelm'];
+function baseVis(it, k){
+  if(!it || !['helm','armor','boots'].includes(k)) return null;
+  const t = Math.max(0, Math.min(2, it.tier|0)), c1 = TIER_MAT[t], c2 = Q_ACC[it.q] || Q_ACC.normal;
+  return {c1, c2, helm: TIER_HELM[t], tier: t, base: true};
+}
 function gearVis(p){
   const g = {}; if(!p.eq) return g;
   const vis = it => { if(!it || !it.ident) return null; if(it.q==='set' && SETS[it.set] && SETS[it.set].vis) return SETS[it.set].vis; if(it.q==='unique') return {c1:'#c8a050', c2:'#ffe08a', helm:'circlet'}; return null; };
-  for(const k of ['helm','armor','gloves','boots','belt']){ const v = vis(p.eq[k]); if(v) g[k] = v; }
+  if(rawSkin) return g;
+  for(const k of ['helm','armor','gloves','boots','belt']){ const v = vis(p.eq[k]) || baseVis(p.eq[k], k); if(v) g[k] = v; }
   const sh = p.eq.offhand; if(sh && sh.type==='shield') g.shield = vis(sh) || {c1:sh.q==='rare'?'#c8b040':sh.q==='magic'?'#5a6ac8':'#8a6a3a', c2:'#c8c8d0'};
   for(const sid in SETS){ if(SETS[sid].vis && countSet(sid) >= SETS[sid].items.length){ g.aura = SETS[sid].vis.aura; g.auraSet = sid; } }
   return g;
@@ -948,7 +963,9 @@ function gearOverlay(md, Bn, g, out){
   const t = performance.now()/1000;
   if(g.helm && !(g.helm.helm==='witch' && md.byName.s_hat!==undefined)){ const H = mul(Bn('head'), [0.8,0,0, 0,0.8,0, 0,0,0.8, 0,0,-0.4]); const st = HELM_STY[g.helm.helm] || HELM_STY.circlet; st((c,s2,col,gl)=>out.push(BX(H,c,s2,col,gl)), g.helm.c1, g.helm.c2, t); }
   if(g.armor){ for(const sd of [1,-1]){ const A = Bn(sd>0?'arm_r':'arm_l'); out.push(BX(A,[0,0,1.7],[4.8,4.2,1.4],g.armor.c1), BX(A,[0,0,2.5],[4.2,3.6,0.5],g.armor.c2)); }
-    const B = Bn('body'); out.push(BX(B,[2.35,0,9],[0.4,2.4,2.4],g.armor.c1), BX(B,[2.55,0,9],[0.3,1.1,1.1],g.armor.c2,true)); }
+    const B = Bn('body'); out.push(BX(B,[2.35,0,9],[0.4,2.4,2.4],g.armor.c1), BX(B,[2.55,0,9],[0.3,1.1,1.1],g.armor.c2,true));
+    if(g.armor.base){ const T = g.armor.tier; out.push(BX(B,[0,0,7.4],[5.4,9.4,T>0?8:6.6],g.armor.c1), BX(B,[0,0,3.6],[5.6,9.6,0.8],g.armor.c2)); for(const sd of [1,-1]){ const A = Bn(sd>0?'arm_r':'arm_l'); out.push(BX(A,[0,0,2.2],[5.4+T*0.4,4.8+T*0.4,2.4+T*0.6],g.armor.c1), BX(A,[0,0,3.6+T*0.3],[5+T*0.4,4.4+T*0.4,0.5],g.armor.c2)); }
+      if(T===2){ out.push(BX(B,[2.45,0,8.2],[0.3,1,5],g.armor.c2)); for(const sd of [1,-1]){ const A = Bn(sd>0?'arm_r':'arm_l'); out.push(BX(A,[0,0,3.2],[5.2,4.6,1.2],g.armor.c1)); } } } }
   if(g.gloves){ for(const sd of [1,-1]){ const A = Bn(sd>0?'arm_r':'arm_l'); out.push(BX(A,[0,0,-8.7],[4.7,3.9,2.6],g.gloves.c1), BX(A,[0,0,-7.3],[4.9,4.1,0.5],g.gloves.c2)); } }
   if(g.boots){ for(const sd of [1,-1]){ const L2 = Bn(sd>0?'leg_r':'leg_l'); out.push(BX(L2,[0.2,0,-10.3],[4.9,4.7,3.6],g.boots.c1), BX(L2,[0.2,0,-8.4],[5.1,4.9,0.5],g.boots.c2)); } }
   if(g.belt){ const B = Bn('body'); out.push(BX(B,[0,0,2.2],[4.9,8.9,1.2],g.belt.c1), BX(B,[2.5,0,2.2],[0.3,1.8,1.3],g.belt.c2)); }
@@ -1387,6 +1404,7 @@ function computeFlow(pi,pj,maxD=30){
 const BUF = 0.22;   // 输入缓冲时长
 let showDiag = false;
 addEventListener('keydown', e=>{
+  if(e.code==='KeyO' && state!=='title'){ setRawSkin(!rawSkin); addText(player.x,player.y,1.6, rawSkin?'显示原皮':'显示装备外观','#ffe08a',1); return; }
   if(e.code==='F8'){ showDiag = !showDiag; if(showDiag && window.World3D) console.log('[World3D] diag', JSON.stringify(World3D.diag(player.x, player.y))); e.preventDefault(); return; }
   if(e.repeat){ if(e.code==='Space') e.preventDefault(); return; }
   keys[e.code] = true;
@@ -5006,7 +5024,7 @@ function drawLoadout(t){
 // ---------- 浮层：设置 / 操作说明 ----------
 function drawTitleOverlay(){
   ctx.fillStyle = 'rgba(0,0,0,.6)'; ctx.fillRect(0,0,VW,VH);
-  const w = TS.overlay==='help' ? 640 : 460, h = TS.overlay==='help' ? 420 : 300, x = VW/2 - w/2, y = VH/2 - h/2;
+  const w = TS.overlay==='help' ? 640 : 460, h = TS.overlay==='help' ? 420 : 340, x = VW/2 - w/2, y = VH/2 - h/2;
   glassPanel(x, y, w, h, {a:0.92, edge:'#ffd860'});
   titleRects.push({x:0, y:0, w:VW, h:VH, kind:'ovbg'});
   titleRects.push({x, y, w, h, kind:'ovpanel'});
@@ -5026,7 +5044,12 @@ function drawTitleOverlay(){
     ctx.fillStyle = on ? '#7affaa' : '#ff7a7a'; ctx.beginPath(); ctx.arc(on ? tx2 + 50 : tx2 + 14, ty2 + 13, 9, 0, 7); ctx.fill();
     txt(on ? '有声' : '静音', tx2 + 80, ty2 + 13, 13, '#ddd');
     titleRects.push({x:tx2, y:ty2, w:64, h:26, kind:'mute'});
-    txt('游戏中：N 静音 · [ ] 调音量', x + 24, y + h - 26, 11, '#8a86a8');
+    txt('显示原皮', x + 24, y + 262, 14, '#ddd');
+    const tx3 = x + 120, ty3 = y + 250; glassPanel(tx3, ty3, 64, 26, {a:0.6, edge: rawSkin ? '#ffd860' : '#8a86a8', r:13});
+    ctx.fillStyle = rawSkin ? '#ffd860' : '#8a86a8'; ctx.beginPath(); ctx.arc(rawSkin ? tx3 + 50 : tx3 + 14, ty3 + 13, 9, 0, 7); ctx.fill();
+    txt(rawSkin ? '隐藏装备外观' : '显示头盔/胸甲/靴子', tx3 + 80, ty3 + 13, 13, '#ddd');
+    titleRects.push({x:tx3, y:ty3, w:64, h:26, kind:'raw'});
+    txt('游戏中：N 静音 · [ ] 调音量 · O 原皮', x + 24, y + h - 26, 11, '#8a86a8');
   } else {
     txt('操作说明', x + 24, y + 34, 22, '#ffe08a', 'left', '"Microsoft YaHei",sans-serif');
     const L = [['移动','WASD'],['连击','鼠标左键'],['射箭（蓄力）','鼠标右键'],['魔法','R / 鼠标中键'],['翻滚 / 奔跑','Shift（按住奔跑）'],['冲刺斩','翻滚中按左键'],['跳跃','空格'],['职业技能','Q'],['神器','1 2 3'],['法师技能','4 5 6'],['药水','E'],['拾取','F'],['背包 / 地图','I / M'],['换武器组','X'],['显示掉落','Alt'],['缩放','滚轮 / - =']];
@@ -5089,9 +5112,10 @@ function titleMenuPick(k){
 function titleClick(mxu, myu){
   if(TS.overlay){
     const ov = titleRects.filter(r=>mxu>=r.x && mxu<=r.x+r.w && myu>=r.y && myu<=r.y+r.h);
-    const top = ov.find(r=>r.kind==='vol' || r.kind==='mute');
+    const top = ov.find(r=>r.kind==='vol' || r.kind==='mute' || r.kind==='raw');
     if(top && top.kind==='vol' && window.SFX){ SFX[top.fn]((mxu - top.bx)/top.bw); if(SFX.muted) SFX.toggle(); SFX.lib.click(); }
     else if(top && top.kind==='mute' && window.SFX){ SFX.toggle(); }
+    else if(top && top.kind==='raw'){ setRawSkin(!rawSkin); if(window.SFX) SFX.lib.click(); }
     else if(!ov.some(r=>r.kind==='ovpanel')) TS.overlay = null;
     return;
   }
