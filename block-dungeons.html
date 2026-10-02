@@ -941,6 +941,10 @@ const HELM_STY = {
 };
 // —— 换装：头盔 / 胸甲 / 靴子 按材质档位 + 品质 默认外观；O 键或设置里「显示原皮」 ——
 let rawSkin = localStorage.getItem('bd_rawskin') === '1';
+let hideVis = (()=>{ try{ return JSON.parse(localStorage.getItem('bd_hidevis')) || {}; }catch(e){ return {}; } })();
+const VIS_SLOTS = ['helm','armor','boots'];
+function toggleHideVis(k){ hideVis[k] = !hideVis[k]; localStorage.setItem('bd_hidevis', JSON.stringify(hideVis)); if(player) recalc(); }
+function eyeRect(k){ const [x,y,w] = DOLL[k]; return [x + w*CELL - 17, y + 2, 15, 12]; }
 function setRawSkin(v){ rawSkin = !!v; localStorage.setItem('bd_rawskin', rawSkin ? '1' : '0'); if(typeof player !== 'undefined' && player) recalc(); }
 const TIER_MAT = ['#7a5232', '#8e959e', '#c9ced8'];           // 皮 / 链 / 板
 const Q_ACC = {normal:'#5a4a3a', magic:'#5a7aff', rare:'#f0d040', unique:'#ffb040', set:'#40e070', runeword:'#e0c890'};
@@ -954,7 +958,7 @@ function gearVis(p){
   const g = {}; if(!p.eq) return g;
   const vis = it => { if(!it || !it.ident) return null; if(it.q==='set' && SETS[it.set] && SETS[it.set].vis) return SETS[it.set].vis; if(it.q==='unique') return {c1:'#c8a050', c2:'#ffe08a', helm:'circlet'}; return null; };
   if(rawSkin) return g;
-  for(const k of ['helm','armor','gloves','boots','belt']){ const v = vis(p.eq[k]) || baseVis(p.eq[k], k); if(v) g[k] = v; }
+  for(const k of ['helm','armor','gloves','boots','belt']){ if(hideVis[k]) continue; const v = vis(p.eq[k]) || baseVis(p.eq[k], k); if(v) g[k] = v; }
   const sh = p.eq.offhand; if(sh && sh.type==='shield') g.shield = vis(sh) || {c1:sh.q==='rare'?'#c8b040':sh.q==='magic'?'#5a6ac8':'#8a6a3a', c2:'#c8c8d0'};
   for(const sid in SETS){ if(SETS[sid].vis && countSet(sid) >= SETS[sid].items.length){ g.aura = SETS[sid].vis.aura; g.auraSet = sid; } }
   return g;
@@ -2124,6 +2128,7 @@ let uiHover = null, uiScale = 1, uiOX = 0, uiOY = 0, uiFlash = 0;
 function uiLocal(){ return [(mouse.x-uiOX)/uiScale, (mouse.y-uiOY)/uiScale]; }
 function uiHit(){
   const [mx, my] = uiLocal(), p = player;
+  for(const k of VIS_SLOTS){ if(!p.eq[k]) continue; const [ex,ey,ew,eh] = eyeRect(k); if(mx>=ex-2 && mx<ex+ew+2 && my>=ey-2 && my<ey+eh+2) return {kind:'eye', slot:k}; }
   for(const k in DOLL){ const [x,y,w,h] = DOLL[k]; if(mx>=x && mx<x+w*CELL && my>=y && my<y+h*CELL) return {kind:'slot', slot:k}; }
   if(mx>=GRID0[0] && my>=GRID0[1] && mx<GRID0[0]+BAG_W*CELL && my<GRID0[1]+BAG_H*CELL) return {kind:'grid', cx:Math.floor((mx-GRID0[0])/CELL), cy:Math.floor((my-GRID0[1])/CELL)};
   for(let i=0;i<4;i++){ const x = CUBE0[0]+i*62, y = CUBE0[1]; if(mx>=x && mx<x+56 && my>=y && my<y+56) return {kind:'cube', i}; }
@@ -2177,6 +2182,7 @@ function bagClick(btn, shift, ctrl){
   if(h.kind==='junk' && btn===0){ salvageJunk(); return; }
   if(h.kind==='idall'){ let n = 0; const all = p.bag.map(b=>b.it).concat(EQ_SLOTS.map(k=>p.eq[k]).filter(Boolean)); for(const it of all) if(!it.ident && p.idScrolls>0){ identify(it); n++; } if(!n && p.idScrolls>0) msg('没有需要鉴定的物品'); recalc(); return; }
   if(h.kind==='sort'){ const its = p.bag.map(b=>b.it).sort((a,b)=>(b.w*b.h)-(a.w*a.h)); p.bag = []; for(const it of its) if(!addToBag(it)) dropItemAt(it,p.x,p.y); return; }
+  if(h.kind==='eye'){ if(btn===0){ toggleHideVis(h.slot); if(window.SFX) SFX.lib.click(); } return; }
   if(h.kind==='transmute'){ transmute(); return; }
   if(h.kind==='cube'){ const t = p.cube[h.i]; p.cube[h.i] = p.cursor; p.cursor = t; return; }
   if(h.kind==='slot'){
@@ -2320,6 +2326,12 @@ function drawBag(){
     if(hov){ ctx.strokeStyle = UIK.C.gold; ctx.lineWidth = 2; ctx.strokeRect(x+1, y+1, w*CELL-2, h*CELL-2); }
     if(it) drawItemIcon(it, x, y, w*CELL, h*CELL);
     else T(SLOT_N[k], x + w*CELL/2, y + h*CELL/2, 11, '#555', 'center');
+    if(it && VIS_SLOTS.includes(k)){ const [ex,ey,ew,eh] = eyeRect(k), hid = hideVis[k] || rawSkin, eh2 = uiHover && uiHover.kind==='eye' && uiHover.slot===k;
+      ctx.fillStyle = eh2 ? 'rgba(255,216,96,.35)' : 'rgba(0,0,0,.55)'; ctx.fillRect(ex, ey, ew, eh);
+      ctx.strokeStyle = hid ? '#777' : '#ffe08a'; ctx.lineWidth = 1.2; ctx.beginPath(); ctx.ellipse(ex+ew/2, ey+eh/2, 6, 3.6, 0, 0, 7); ctx.stroke();
+      if(!hid){ ctx.fillStyle = '#ffe08a'; ctx.beginPath(); ctx.arc(ex+ew/2, ey+eh/2, 1.8, 0, 7); ctx.fill(); }
+      else { ctx.strokeStyle = '#ff7a7a'; ctx.beginPath(); ctx.moveTo(ex+2, ey+eh-1); ctx.lineTo(ex+ew-2, ey+1); ctx.stroke(); }
+      if(eh2) T(rawSkin ? '原皮模式中（O 键）' : hideVis[k] ? '点击显示外观' : '点击隐藏外观', ex+ew/2, ey-8, 11, '#ffe08a', 'center'); }
     if(k==='offhand' && !it && p.eq.weapon && noOffhand(p.eq.weapon.kind)){ ctx.globalAlpha = 0.3; drawItemIcon(p.eq.weapon, x, y, w*CELL, h*CELL); ctx.globalAlpha = 1; }
   }
   // ---- 套装 / 符文之语 状态 ----
