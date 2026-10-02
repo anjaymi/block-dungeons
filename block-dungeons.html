@@ -1342,6 +1342,17 @@ function drawGate(i,j){
 }
 
 const MCSCALE = {zombie:1.04,husk:1.04,skeleton:1.0,stray:1.0,creeper:0.95,spider:0.9,cavespider:1.12,enderman:1.3,blaze:0.95,slime:0.95,bat:0.92,wraith:1.15,hannya:1.25,mimic:1.1,treant:1.35};
+// 找一个玩家周围可站立、且与玩家视线无遮挡的传送点；找不到返回 null
+function findBlinkSpot(m, p, r0, r1){
+  for(let k=0;k<12;k++){
+    const a = rnd(0,6.28), rr = rnd(r0,r1), x = p.x+Math.cos(a)*rr, y = p.y+Math.sin(a)*rr;
+    if(wallAt(x,y) || wallAt(x+m.r,y) || wallAt(x-m.r,y) || wallAt(x,y+m.r) || wallAt(x,y-m.r)) continue;
+    if(!los({x,y}, p)) continue;
+    const t = {x, y, r:m.r}; collideCircle(t); if(wallAt(t.x,t.y)) continue;
+    return t;
+  }
+  return null;
+}
 function spawnMob(type, x, y){
   const d = MOB[type], sc = floorN-1;
   const m = {type, x, y, ang:rnd(0,6.28), r:d.r, hp:d.hp*(1+0.22*sc), maxhp:d.hp*(1+0.22*sc), dmg:d.dmg*(1+0.12*sc),
@@ -2635,7 +2646,7 @@ function releaseMageSkill(){
 }
 function steerHoming(s, dt){
   let best = null, bd = 8;
-  for(const m of mobs){ if(m.hp<=0 || s.hit.has(m)) continue; const d = Math.hypot(m.x-s.x, m.y-s.y); if(d < bd){ bd = d; best = m; } }
+  for(const m of mobs){ if(m.hp<=0 || s.hit.has(m)) continue; const d = Math.hypot(m.x-s.x, m.y-s.y); if(d < bd && los(s, m)){ bd = d; best = m; } }
   if(!best) return;
   const want = Math.atan2(best.y-s.y, best.x-s.x); let da = want - s.ang; da = Math.atan2(Math.sin(da), Math.cos(da));
   const turn = s.turn*dt; s.ang += Math.max(-turn, Math.min(turn, da));
@@ -3069,6 +3080,7 @@ function bladeHits(cur, prev){
         if(m.hp<=0 || p.hitSet.has(m)) continue;
         const [dd, cx, cy] = segDist(m.x, m.y, hx, hy, tx, ty);
         if(dd > m.r + 0.14) continue;
+        if(!los(p, m) && dist(p, m) > m.r + p.r + 0.2) continue;   // 修复：刀光不能穿墙砍到墙后的怪
         p.hitSet.add(m);
         meleeHit(m, cx, cy);
       }
@@ -3109,13 +3121,14 @@ function onActEnd(){
   const p = player, d = p.atkDef;
   if(d.guard)rings.push({x:p.x,y:p.y,z:.2,r:.85,t:0,col:weaponFxInfo().rgb});
   if(d.shock && p.prevBlades){
-    const b = p.prevBlades[0], cx = b.tx, cy = b.ty;
+    const b = p.prevBlades[0], sa = Math.atan2(b.ty-p.y, b.tx-p.x), sd = Math.min(Math.hypot(b.tx-p.x, b.ty-p.y), Math.max(0, rayLen(p.x, p.y, sa, 8) - 0.15));
+    const cx = p.x + Math.cos(sa)*sd, cy = p.y + Math.sin(sa)*sd;   // 修复：震波中心不越过墙体
     rings.push({x:cx, y:cy, r:d.shock, t:0, col:'255,240,200'});
     for(let k=0;k<18;k++){ const a = rnd(0,6.28); addPart(cx,cy,0.05,Math.cos(a)*rnd(2,4),Math.sin(a)*rnd(2,4),rnd(1,3),pick(['#bbbbbb','#888888',theme.floor[0]]),0.5,5); }
     shake = Math.max(shake, 6);
     for(const m of mobs){
       if(m.hp<=0 || p.hitSet.has(m)) continue;
-      if(Math.hypot(m.x-cx, m.y-cy) < d.shock + m.r){
+      if(Math.hypot(m.x-cx, m.y-cy) < d.shock + m.r && los({x:cx, y:cy}, m)){
         p.hitSet.add(m);
         const a = Math.atan2(m.y-cy, m.x-cx);
         damageMob(m, rollWDmg()*d.m*0.6*(1+0.3*L('sharp')), a, d.kb*0.8, d.kb);
@@ -3184,6 +3197,7 @@ function killMob(m){
 function hurtPlayer(dmg, src, ang, el='phys', blockable=false){
   const p = player;
   if(state!=='play') return false;
+  if(src && src.type && src.hp !== undefined && !los(src, p)) return false;   // 修复：怪物近战不能隔墙命中
   if(p.inv>0){
     if(p.st==='roll' && p.dodgedT<=0){ p.dodgedT = 0.5; addText(p.x,p.y,1.6,'闪避!','#7fe8ff',1.1); if(L('perfect')) p.perfectT = 1.5; slowT = Math.max(slowT, 0.18); }
     return false;
@@ -3391,8 +3405,8 @@ function stepMob(m, dt){
       } else if(m.st==='blink'){
         if(!m.didHit){ m.didHit = true;
           for(let k=0;k<12;k++) addPart(m.x+rnd(-.3,.3),m.y+rnd(-.3,.3),rnd(0.1,1.8),rnd(-1,1),rnd(-1,1),rnd(0.5,2),'#b060ff',0.5,3);
-          const a2 = rnd(0,6.28), rr = rnd(1.8,3.0), nx = p.x+Math.cos(a2)*rr, ny = p.y+Math.sin(a2)*rr;
-          if(!wallAt(nx,ny)){ const tmp2 = {x:nx,y:ny,r:m.r}; collideCircle(tmp2); m.x = tmp2.x; m.y = tmp2.y; m.ang = Math.atan2(p.y-m.y,p.x-m.x); }
+          const sp2 = findBlinkSpot(m, p, 1.8, 3.0);
+          if(sp2){ m.x = sp2.x; m.y = sp2.y; m.ang = Math.atan2(p.y-m.y,p.x-m.x); }
           for(let k=0;k<12;k++) addPart(m.x+rnd(-.3,.3),m.y+rnd(-.3,.3),rnd(0.1,1.8),rnd(-1,1),rnd(-1,1),rnd(0.5,2),'#b060ff',0.5,3);
           rings.push({x:m.x,y:m.y,r:0.9,t:0,col:'180,110,255'});
         }
@@ -3457,8 +3471,8 @@ function stepMob(m, dt){
       } else if(m.st==='blink'){
         if(!m.didHit){ m.didHit = true;
           for(let k=0;k<10;k++) addPart(m.x+rnd(-.3,.3),m.y+rnd(-.3,.3),rnd(0.1,1.7),rnd(-1,1),rnd(-1,1),rnd(0.5,2),'#6af0d8',0.5,3);
-          const a2 = rnd(0,6.28), rr = rnd(1.6,2.8), nx = p.x+Math.cos(a2)*rr, ny = p.y+Math.sin(a2)*rr;
-          m.x = nx; m.y = ny; m.ang = Math.atan2(p.y-ny,p.x-nx);
+          const sp2 = findBlinkSpot(m, p, 1.6, 2.8);   // 修复：原来不检查墙体，幽灵会闪进墙里
+          if(sp2){ m.x = sp2.x; m.y = sp2.y; m.ang = Math.atan2(p.y-m.y,p.x-m.x); }
           for(let k=0;k<10;k++) addPart(m.x+rnd(-.3,.3),m.y+rnd(-.3,.3),rnd(0.1,1.7),rnd(-1,1),rnd(-1,1),rnd(0.5,2),'#6af0d8',0.5,3); }
         if(m.t>=0.32){ setSt(m,'chase'); m.cd = 3.2; }
       } else if(m.st==='touchw'){
@@ -4588,7 +4602,7 @@ function drawTitle(){
   UIK.button(bx2, by2, bw2, 40, '▶ 开始冒险（Enter）', {primary:true, hover: hovB || Math.floor(t*2)%2, size:18});
   titleRects.push({x:bx2, y:by2, w:bw2, h:40, kind:'start'});
   { const L1 = 'WASD 移动 · 左键 连击 · 右键 射箭 · R/中键 魔法 · 空格 跳跃 · Shift 翻滚/按住奔跑 · 翻滚中左键 冲刺斩',
-          L2 = 'Q 职业技能 · 1 2 3 神器 · E 药水 · F 拾取 · I 背包 · M 地图 · X 换武器组 · Alt 显示掉落';
+          L2 = 'Q 职业技能 · 1 2 3 神器 · E 药水 · F 拾取 · I 背包 · M 地图 · X 换武器组 · Alt 显示掉落 · N 静音 · [ ] 音量';
     const w = Math.max(UIK.measure(L1,12), UIK.measure(L2,12)) + 36;
     UIK.panel(VW/2 - w/2, VH - 56, w, 46, {alpha:0.8});
     txt(L1, VW/2, VH-41, 12, '#bbb', 'center'); txt(L2, VW/2, VH-24, 12, '#bbb', 'center'); }
@@ -4668,5 +4682,6 @@ function loop(now){
 }
 requestAnimationFrame(loop);
 </script>
+<script src="sfx.js?v=1"></script>
 </body>
 </html>

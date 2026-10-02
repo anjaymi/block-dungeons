@@ -8,6 +8,7 @@
 !/voxmobs.js
 !/weapon-models.js
 !/world3d.js
+!/sfx.js
 !/vendor/
 /vendor/*
 !/vendor/voxel-world.js
