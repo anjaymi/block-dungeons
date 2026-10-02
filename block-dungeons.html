@@ -346,9 +346,9 @@ const WEAPONS = {
     {a:'slash',s:-1,w:.20,act:.12,rec:.31,m:1.15,kb:12,lunge:.4,stop:.10},
     {a:'slam',w:.29,act:.12,rec:.40,m:2.0,kb:15,lunge:.6,stop:.13,shock:2.2}]},
   staff:{n:'法杖',kind:'staff',len:34,col:'#93a5ca',dmg:5.5,twoH:true,ranged:true,tip:'奥术点射 → 强化点射 → 三连齐射；不耗箭矢',combo:[
-    {a:'stab',h:1,w:.11,act:.07,rec:.20,m:.85,kb:2,lunge:0,stop:.02,volley:1},
-    {a:'stab',h:1,w:.10,act:.07,rec:.20,m:1.0,kb:2,lunge:0,stop:.02,volley:1},
-    {a:'stab',h:1,w:.19,act:.08,rec:.31,m:.70,kb:3,lunge:0,stop:.04,volley:3}]},
+    {a:'stab',h:1,w:.09,act:.06,rec:.16,m:.9,kb:5,lunge:0,stop:.02,volley:1},
+    {a:'stab',h:1,w:.08,act:.06,rec:.16,m:1.0,kb:5,lunge:0,stop:.02,volley:1},
+    {a:'stab',h:1,w:.20,act:.08,rec:.28,m:.75,kb:7,lunge:0,stop:.04,volley:3,big:true}]},
   shieldblade:{n:'盾刀',kind:'shieldblade',len:27,col:'#b9bdc7',dmg:7.2,block:18,tip:'盾刃横斩 → 穿刺 → 回盾；回盾后摇可格挡',combo:[
     {a:'slash',s:1,w:.10,act:.09,rec:.20,m:1.0,kb:5,lunge:.25,stop:.06},
     {a:'stab',h:1,w:.09,act:.08,rec:.20,m:1.15,kb:5,lunge:.35,stop:.06},
@@ -413,7 +413,7 @@ function useClassSkill(){
     for(let k=0;k<14;k++) addPart(x0, y0, rnd(0.2,1.2), rnd(-3,3), rnd(-3,3), rnd(0,2), '#c8b0ff', 0.5, 3);
     p.x = x0+Math.cos(a)*d; p.y = y0+Math.sin(a)*d; p.inv = Math.max(p.inv, 0.3);
     const R = 2.0, dmg = 14*spellMul(); rings.push({x:x0,y:y0,z:0.1,r:R,t:0,col:'160,200,255',flat:true}); ring(1.2,'200,170,255');
-    for(const m of mobs){ if(m.hp>0 && Math.hypot(m.x-x0,m.y-y0) < R+m.r){ m.frozen = Math.max(m.frozen||0, 2); damageMob(m, dmg, Math.atan2(m.y-y0,m.x-x0), 6, 6, false, true); } }
+    for(const m of mobs){ if(m.hp>0 && Math.hypot(m.x-x0,m.y-y0) < R+m.r){ m.frozen = Math.max(m.frozen||0, 2); damageMob(m, dmg, Math.atan2(m.y-y0,m.x-x0), 12, 99, false, true); } }
   } else if(p.cls==='assassin'){
     const x0 = p.x, y0 = p.y; let d = 0;
     for(let t=0.2;t<=4.5;t+=0.2){ const nx = x0+Math.cos(a)*t, ny = y0+Math.sin(a)*t; if(wallAt(nx,ny)) break; d = t; }
@@ -2437,10 +2437,12 @@ function weaponFlare(vis,dt){
 function releaseStaffVolley(){
   const p=player,d=p.atkDef,fx=weaponFxInfo(),n=d.volley||1;
   for(let i=0;i<n;i++){
-    const a=p.atkAng+(i-(n-1)/2)*.13,sp=13.5;
-    shots.push({x:p.x+Math.cos(a)*1.15,y:p.y+Math.sin(a)*1.15,sx:p.x,sy:p.y,z:1.05+p.z,vx:Math.cos(a)*sp,vy:Math.sin(a)*sp,dmg:rollWDmg()*d.m*(1+(p.G.ene||0)/180)*(1+.35*L('arcane')),friendly:true,life:1.05,ang:a,pierce:0,hit:new Set(),weaponBolt:true,col:fx.color});
+    const a=p.atkAng+(i-(n-1)/2)*.16,sp=d.big?15.5:14;
+    shots.push({x:p.x+Math.cos(a)*1.15,y:p.y+Math.sin(a)*1.15,sx:p.x,sy:p.y,z:1.05+p.z,vx:Math.cos(a)*sp,vy:Math.sin(a)*sp,dmg:rollWDmg()*d.m*(1+(p.G.ene||0)/180)*(1+.35*L('arcane')),friendly:true,life:1.05,ang:a,pierce:0,hit:new Set(),weaponBolt:true,kb:d.kb,poise:d.big?6:4,big:!!d.big,col:fx.color});
   }
-  rings.push({x:p.x+Math.cos(p.atkAng)*1.15,y:p.y+Math.sin(p.atkAng)*1.15,z:1.05+p.z,r:.7,t:0,col:fx.rgb});
+  rings.push({x:p.x+Math.cos(p.atkAng)*1.15,y:p.y+Math.sin(p.atkAng)*1.15,z:1.05+p.z,r:d.big?1.1:.7,t:0,col:fx.rgb});
+  p.mvx -= Math.cos(p.atkAng)*(d.big?2.2:0.8); p.mvy -= Math.sin(p.atkAng)*(d.big?2.2:0.8);   // 后坐
+  shake = Math.max(shake, d.big?4:1.5);
   for(let k=0;k<10;k++) addPart(p.x+Math.cos(p.atkAng)*1.15, p.y+Math.sin(p.atkAng)*1.15, 1.05+p.z, rnd(-2,2)+Math.cos(p.atkAng)*3, rnd(-2,2)+Math.sin(p.atkAng)*3, rnd(0,1.5), fx.color, 0.35, 3, true);
 }
 function drawWeaponBolt(s){
@@ -2464,9 +2466,10 @@ function startAttack(){
   p.ambush = false;
   if(W.kind==='dagger' && p.shadowT > 0){ p.ambush = true; p.shadowT = 0; lunge += 1.6;   // 影袭：翻滚后突进
     for(let k=0;k<10;k++) addPart(p.x,p.y,rnd(0.2,1.2),rnd(-1,1),rnd(-1,1),rnd(0,1),pick(['#3a2a4a','#6a4a8a','#1a1020']),0.4,4); }
-  if(aim.target){ const d = dist(aim.target,p) - aim.target.r, reach = weaponReach()*0.75; lunge = clamp(d - reach, 0, lunge + 1.0); if(d<reach) lunge = Math.min(lunge, 0.1); }
+  if(W.ranged) lunge = 0;   // 远程武器：绝不朝目标突进
+  else if(aim.target){ const d = dist(aim.target,p) - aim.target.r, reach = weaponReach()*0.75; lunge = clamp(d - reach, 0, lunge + 1.0); if(d<reach) lunge = Math.min(lunge, 0.1); }
   p.lungeV = lunge/(p.T.w + p.T.act);
-  p.mvx *= 0.3; p.mvy *= 0.3;
+  if(!W.ranged){ p.mvx *= 0.3; p.mvy *= 0.3; } else { p.mvx *= 0.8; p.mvy *= 0.8; }
 }
 function startRoll(){
   const p = player, mv = moveInput();
@@ -2581,7 +2584,7 @@ function releaseSpell(){
     for(let k=0;k<5 && cur;k++){
       seen.add(cur); pts.push([cur.x, cur.y, 0.6*cur.scale+(cur.z||0)]);
       const an = Math.atan2(cur.y-prev.y, cur.x-prev.x);
-      damageMob(cur, 9*mul2*(1-0.1*k), an, 4, 5); sparks(cur.x, cur.y, 0.6, an, k===0);
+      damageMob(cur, 9*mul2*(1-0.1*k), an, 7, 8); sparks(cur.x, cur.y, 0.6, an, k===0); cur.stunT = Math.max(cur.stunT||0, 0.25);
       cur.frozen = 0;
       prev = cur; let nx = null, bd = 3.6;
       for(const m of mobs){ if(m.hp<=0 || seen.has(m)) continue; const d = dist(m,prev); if(d<bd && los(prev,m)){ bd = d; nx = m; } }
@@ -2601,7 +2604,8 @@ function useMageSkill(i){
   p.mCD = p.mCD || [0,0,0];
   if(!mageLv(i)){ addText(p.x,p.y,1.6,`${S.n} · Lv.${S.lvl} 解锁`,'#c8b0ff',0.9); return; }
   if(p.mCD[i] > 0) return;
-  if(!(p.st==='move' || (p.st==='atk' && p.ph==='rec')) || !grounded()) return;
+  if(!(p.st==='move' || (p.st==='atk' && p.ph==='rec') || (p.st==='atk' && WEAPONS[p.weapon].ranged)) || !grounded()){ p.mBuf = {i, t:0.35}; return; }   // 缓冲到可施放时
+  p.mBuf = null;
   const cost = S.mana*(i===1 ? 1-0.2*L('m_shield') : 1);
   if(p.mana < cost){ addText(p.x,p.y,1.6,'法力不足','#8fb0ff',0.9); return; }
   p.mana -= cost; p.mCD[i] = S.cd/(1+(p.G.effFcr||0)/200);
@@ -2620,10 +2624,17 @@ function useMageSkill(i){
 function staffTip(p, fw=1.15, z=1.05){ return [p.x+Math.cos(p.ang)*fw, p.y+Math.sin(p.ang)*fw, z+(p.z||0)]; }
 function releaseMageSkill(){
   const p = player, mul2 = spellMul();
+  { const S = MAGE_SK.find(S2=>S2.id===p.mSk), tp = staffTip(p, p.mSk==='meteor' ? 0.4 : 1.15, p.mSk==='meteor' ? 2.3 : 1.05);
+    rings.push({x:tp[0], y:tp[1], z:tp[2], r:1.0, t:0, col:S.rgb}); glows.push({x:tp[0], y:tp[1], t:0, r:1.2});
+    for(let k=0;k<12;k++){ const b = rnd(0,6.28); addPart(tp[0],tp[1],tp[2],Math.cos(b)*rnd(2,5),Math.sin(b)*rnd(2,5),rnd(-1,2),S.col,0.35,3,true); }
+    hitStop = Math.max(hitStop, 0.035); shake = Math.max(shake, 3); }
   if(p.mSk==='missile'){
     p.mQ = {left: 5 + 2*L('m_missile'), t: 0, dmg: 4.2*mul2*(1+0.15*L('m_missile'))};
   } else if(p.mSk==='shield'){
     p.mShieldT = 6 + 2*L('m_shield');
+    for(const m of mobs){ if(m.hp<=0) continue; const d = Math.hypot(m.x-p.x, m.y-p.y); if(d < 2.4 + m.r){ const an = Math.atan2(m.y-p.y, m.x-p.x); damageMob(m, 4*mul2, an, 14, 99, false, true); m.stunT = Math.max(m.stunT||0, 0.5); } }
+    for(const s2 of shots) if(!s2.friendly && Math.hypot(s2.x-p.x,s2.y-p.y) < 2.4) s2.life = 0;
+    hitStop = Math.max(hitStop, 0.06); shake = Math.max(shake, 6);
     rings.push({x:p.x,y:p.y,r:1.6,t:0,col:'122,200,255'}); rings.push({x:p.x,y:p.y,r:1.0,t:0.06,col:'230,248,255'});
     glows.push({x:p.x,y:p.y,t:0,r:1.6,frost:true});
     for(let k=0;k<26;k++){ const b = rnd(0,6.28); addPart(p.x+Math.cos(b)*0.3,p.y+Math.sin(b)*0.3,rnd(0.2,1.6),Math.cos(b)*rnd(2,4),Math.sin(b)*rnd(2,4),rnd(0.5,2),pick(['#bfe6ff','#7ac8ff','#ffffff']),0.45,3,true); }
@@ -2633,6 +2644,30 @@ function releaseMageSkill(){
     meteors.push({x:T.x, y:T.y, t:0, delay:0.8, R, dmg:30*mul2, burn:3.2*mul2*(1+0.5*L('m_meteor'))});
     const tp = staffTip(p, 0.5, 2.2); for(let k=0;k<14;k++) addPart(tp[0],tp[1],tp[2],rnd(-1.5,1.5),rnd(-1.5,1.5),rnd(2,5),pick(['#ff8a3a','#ffd060','#ff4010']),0.5,4,true);
   }
+}
+function hexRgb(h){ const n = parseInt(h.slice(1,7),16); return `${n>>16&255},${n>>8&255},${n&255}`; }
+function spellImpact(x, y, z, ang, rgb, big){
+  rings.push({x, y, z, r: big ? 0.9 : 0.55, t:0, col:rgb});
+  glows.push({x, y, t:0, r: big ? 1.1 : 0.7});
+  const [r,g,b] = rgb.split(',').map(Number), c1 = `rgb(${r},${g},${b})`, c2 = `rgb(${Math.min(255,r+70)},${Math.min(255,g+70)},${Math.min(255,b+70)})`;
+  for(let k=0;k<(big?14:8);k++){ const a2 = ang + Math.PI + rnd(-1.3,1.3), sp = rnd(2,6); addPart(x, y, z, Math.cos(a2)*sp, Math.sin(a2)*sp, rnd(0,2.5), k%2 ? c1 : c2, rnd(0.25,0.4), rnd(2.5,4), true); }
+}
+function drawCastCircle(list){   // 施法时脚下旋转法阵
+  const p = player; if(!p || p.st!=='mcast' || !p.mSk) return;
+  const S = MAGE_SK.find(S2=>S2.id===p.mSk), u = Math.min(1, p.pt / Math.max(0.05, p.mRel)), fade = p.pt > p.mRel ? Math.max(0, 1 - (p.pt-p.mRel)/Math.max(0.05,p.mDur-p.mRel)) : 1;
+  list.push({k:p.y-0.6, f:()=>{
+    const c = P(p.x, p.y, 0.02), t = performance.now()/1000, R = (0.6 + 0.6*eo(u))*SX, ry = R*SY/SX;
+    ctx.save(); ctx.globalCompositeOperation = 'lighter'; ctx.globalAlpha = fade;
+    ctx.strokeStyle = `rgba(${S.rgb},.85)`; ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.ellipse(c[0], c[1], R, ry, 0, 0, 7); ctx.stroke();
+    ctx.beginPath(); ctx.ellipse(c[0], c[1], R*0.78, ry*0.78, 0, 0, 7); ctx.stroke();
+    for(let k=0;k<6;k++){ const a = t*1.8 + k/6*Math.PI*2, a2 = a + Math.PI*2/6*2; ctx.beginPath(); ctx.moveTo(c[0]+Math.cos(a)*R*0.78, c[1]+Math.sin(a)*ry*0.78); ctx.lineTo(c[0]+Math.cos(a2)*R*0.78, c[1]+Math.sin(a2)*ry*0.78); ctx.stroke(); }
+    for(let k=0;k<12;k++){ const a = -t*1.2 + k/12*Math.PI*2; ctx.fillStyle = `rgba(${S.rgb},.9)`; ctx.fillRect(c[0]+Math.cos(a)*R*0.9-1.5, c[1]+Math.sin(a)*ry*0.9-1.5, 3, 3); }
+    const g = ctx.createRadialGradient(c[0],c[1],0,c[0],c[1],R); g.addColorStop(0,`rgba(${S.rgb},.35)`); g.addColorStop(1,`rgba(${S.rgb},0)`); ctx.fillStyle = g; ctx.beginPath(); ctx.ellipse(c[0], c[1], R, ry, 0, 0, 7); ctx.fill();
+    // 杖头蓄能光球
+    const tp = staffTip(p, p.mSk==='meteor' ? 0.4 : 1.15, p.mSk==='meteor' ? 2.3 : 1.05), q = P(tp[0], tp[1], tp[2]), sz = 18 + 30*u;
+    ctx.drawImage(SceneFX.glowSprite(...S.rgb.split(',').map(Number)), q[0]-sz, q[1]-sz, sz*2, sz*2);
+    ctx.restore(); }});
 }
 function steerHoming(s, dt){
   let best = null, bd = 8;
@@ -2644,7 +2679,12 @@ function steerHoming(s, dt){
 }
 function mageStep(dt){
   const p = player; if(!p) return;
-  if(p.mCD) for(let i=0;i<3;i++) p.mCD[i] = Math.max(0, p.mCD[i]-dt);
+  if(p.mCD) for(let i=0;i<3;i++){ const was = p.mCD[i]; p.mCD[i] = Math.max(0, p.mCD[i]-dt);
+    if(was > 0 && p.mCD[i] === 0 && mageLv(i)){ p.mReady = p.mReady || [0,0,0]; p.mReady[i] = 0.6; if(window.SFX && SFX.lib && SFX.lib.ready) try{ SFX.lib.ready(i); }catch(e){} } }
+  if(p.mReady) for(let i=0;i<3;i++) p.mReady[i] = Math.max(0, p.mReady[i]-dt);
+  if(p.mBuf){ p.mBuf.t -= dt; if(p.mBuf.t <= 0) p.mBuf = null; else if(p.st==='move' || (p.st==='atk' && p.ph==='rec')){ const bi = p.mBuf.i; p.mBuf = null; useMageSkill(bi); } }
+  if(p.st==='mcast'){ p.mCastFx = (p.mCastFx||0) + dt; if(Math.random()<0.6){ const tp = staffTip(p, p.mSk==='meteor' ? 0.4 : 1.0, p.mSk==='meteor' ? 2.3 : 1.1); const col = MAGE_SK.find(S=>S.id===p.mSk).col;
+      const b = rnd(0,6.28); addPart(tp[0]+Math.cos(b)*0.6, tp[1]+Math.sin(b)*0.6, tp[2], -Math.cos(b)*2.5, -Math.sin(b)*2.5, 0, col, 0.3, 3, true); } } else p.mCastFx = 0;
   if(p.mShieldT > 0){ p.mShieldT -= dt; if(p.mShieldT <= 0){ p.mShieldT = 0; rings.push({x:p.x,y:p.y,r:1.2,t:0,col:'122,200,255'}); } }
   if(p.mShieldHit > 0) p.mShieldHit -= dt;
   // 飞弹连发：杖头逐发射出，左右交替扇开，随后追踪
@@ -2963,10 +3003,12 @@ function stepPlayer(dt){
     case 'atk': {
       p.pt += dt;
       const T = p.T;
-      if(p.ph==='wind'){ ctrl = 0.1; if(p.pt>=T.w){ p.ph='act'; p.pt-=T.w; } }
-      if(p.ph==='act'&&WEAPONS[p.weapon].ranged&&!p.weaponProjectileDone){p.weaponProjectileDone=true;releaseStaffVolley();}
-      if(p.ph==='act'){ ctrl = 0.1; if(p.pt>=T.act){ p.ph='rec'; p.pt-=T.act; onActEnd(); } }
-      if(p.ph==='rec'){ ctrl = 0.5; if(p.pt>=T.rec){ p.st='move'; p.comboKeep = 0.3; } }
+      const rng = WEAPONS[p.weapon].ranged;
+      if(rng){ const ca = computeAim(10); p.atkAng = ca.ang; p.ang = ca.ang; }   // 远程：持续跟随准星
+      if(p.ph==='wind'){ ctrl = rng ? 0.62 : 0.1; if(rng) p.chargeFx = (p.chargeFx||0) + dt; if(p.pt>=T.w){ p.ph='act'; p.pt-=T.w; } }
+      if(p.ph==='act'&&rng&&!p.weaponProjectileDone){p.weaponProjectileDone=true;releaseStaffVolley();p.chargeFx=0;}
+      if(p.ph==='act'){ ctrl = rng ? 0.62 : 0.1; if(p.pt>=T.act){ p.ph='rec'; p.pt-=T.act; onActEnd(); } }
+      if(p.ph==='rec'){ ctrl = rng ? 0.75 : 0.5; if(p.pt>=T.rec){ p.st='move'; p.comboKeep = 0.3; } }
       if(p.ph==='wind' || p.ph==='act'){
         const prof = p.ph==='wind' ? 0.6 : 1.6;
         lx = Math.cos(p.atkAng)*p.lungeV*prof; ly = Math.sin(p.atkAng)*p.lungeV*prof;
@@ -3212,6 +3254,7 @@ function hurtPlayer(dmg, src, ang, el='phys', blockable=false){
   if(p.mShieldT > 0 && p.mana > 0){   // 法力护盾：伤害改扣法力
     const need = dmg*1.5*(1-0.2*L('m_shield')), use = Math.min(p.mana, need); p.mana -= use; const left = dmg*(1 - use/need);
     p.mShieldHit = 0.25; addText(p.x,p.y,1.4,'护盾 -'+Math.max(1,Math.round(use)),'#7ac8ff');
+    if(src && src.type && src.hp>0){ const an = Math.atan2(src.y-p.y, src.x-p.x); src.vx += Math.cos(an)*9/src.mass; src.vy += Math.sin(an)*9/src.mass; src.flinch = 0.2; src.flinchMax = 0.2; src.flinchA = an; }
     for(let k=0;k<8;k++){ const b = rnd(0,6.28); addPart(p.x+Math.cos(b)*0.6,p.y+Math.sin(b)*0.6,rnd(0.3,1.2),Math.cos(b)*2,Math.sin(b)*2,rnd(0,1),'#bfe6ff',0.3,3,true); }
     if(p.mana <= 0.5){ p.mShieldT = 0; addText(p.x,p.y,1.8,'护盾破碎','#9fd8ff',1); rings.push({x:p.x,y:p.y,r:1.4,t:0,col:'122,200,255'}); shake = Math.max(shake, 6); }
     if(left <= 0.01){ p.inv = 0.35; hitStop = Math.max(hitStop, 0.03); return true; }
@@ -3866,8 +3909,11 @@ function simStep(dt){
             sparks(s.x,s.y,0.6,s.ang,true); hitStop = Math.max(hitStop, 0.085); shake = Math.max(shake, 6);
             for(let k=0;k<8;k++) addPart(m.x,m.y,0.05,Math.cos(s.ang)*rnd(2,5)+rnd(-1,1),Math.sin(s.ang)*rnd(2,5)+rnd(-1,1),rnd(0.5,1.5),'#9a8a70',0.45,5);
           } else {
-            damageMob(m, s.weaponBolt?gearProcs(m,s.dmg):s.dmg, s.ang, 3.5, 2.5);
-            sparks(s.x,s.y,0.6,s.ang,false); hitStop = Math.max(hitStop, 0.03);
+            const kb2 = s.kb ?? (s.arcane ? 5.5 : 3.5), po2 = s.poise ?? (s.arcane ? 4 : 2.5);
+            damageMob(m, s.weaponBolt?gearProcs(m,s.dmg):s.dmg, s.ang, kb2, po2);
+            if(s.weaponBolt || s.arcane) spellImpact(s.x, s.y, s.z, s.ang, s.arcane ? '190,140,255' : (s.col && s.col[0]==='#' ? hexRgb(s.col) : '160,200,255'), s.big);
+            else sparks(s.x,s.y,0.6,s.ang,false);
+            hitStop = Math.max(hitStop, s.big ? 0.045 : 0.03);
           }
           if(s.arcane){ m.arcMark = performance.now()+4000; if(m.hp<=0) player.mana = Math.min(player.maxMana, player.mana+4); }
           if(L('freeze')) m.frozen = 2; if(Math.random()<0.15*L('thunder')) lightning(m);
@@ -4269,6 +4315,7 @@ function render(){
     if(m.flinch>0){ const u = m.flinch/m.flinchMax, th = m.flinchAmp*Math.sin(u*Math.PI*0.5)*(m.type==='golem'?0.3:1), T = mul(mat(m.flinchA,0,0), mul(mat(0,th,0), mat(-m.flinchA,0,0))); rig = rig.map(b=>{ const nb = BX(mul(T,b.M), b.c, b.s, b.col, b.nf); nb.tx = b.tx; nb.sm = b.sm; return nb; }); }
     drawRig(m, rig, PX*m.scale, m.z, m===curTarget ? '#e8232e' : null); healthBar(m); }});
   drawMageWorld(list);
+  drawCastCircle(list);
   for(const cl of clouds) list.push({k:cl.y-0.5, f:()=>{ const a2 = P(cl.x,cl.y,0.05); ctx.globalAlpha = Math.min(0.22, cl.t*0.1); ctx.fillStyle = 'rgba(110,220,110,1)'; ctx.beginPath(); ctx.ellipse(a2[0],a2[1],cl.r*SX,cl.r*SY,0,0,7); ctx.fill(); ctx.globalAlpha = 1; }});
   for(const c of corpses) list.push({k:c.y-0.3, f:()=>{
     const sink = c.t>3 ? (c.t-3)*0.35 : 0;
@@ -4481,6 +4528,11 @@ function drawHUD(){
   if(nMg) MAGE_SK.forEach((S2, i) => { const cdv = p.mCD ? Math.max(0, p.mCD[i]) : 0, locked = !mageLv(i), cost = Math.round(S2.mana*(i===1 ? 1-0.2*L('m_shield') : 1));
     put(10+i, {icon: locked ? '🔒' : S2.ico, key:S2.key, cd: cdv/S2.cd, cdText: cdv>0.05 ? (cdv<3 ? cdv.toFixed(1) : Math.ceil(cdv)+'') : '', col:S2.col, disabled: locked || p.mana < cost, active: i===1 && p.mShieldT>0, count: locked ? 'Lv'+S2.lvl : cost},
       `${S2.n} · ${S2.key}${locked ? ` · Lv.${S2.lvl} 解锁` : ''} · 法力 ${cost} · 冷却 ${S2.cd}s：${S2.d}`); });
+  if(nMg && p.mReady) for(let i=0;i<3;i++){ const r = p.mReady[i]; if(r<=0) continue;   // 技能就绪闪光
+    const x = slotAt(10+i), k = r/0.6, pad = 4*(1-k)*3; ctx.save(); ctx.globalCompositeOperation = 'lighter';
+    ctx.strokeStyle = `rgba(255,230,140,${k})`; ctx.lineWidth = 3; ctx.strokeRect(x-pad, hy-pad, S+pad*2, S+pad*2);
+    ctx.fillStyle = `rgba(255,220,120,${0.35*k})`; ctx.fillRect(x, hy, S, S); ctx.restore(); }
+  if(nMg && p.mBuf){ const x = slotAt(10+p.mBuf.i); ctx.strokeStyle = 'rgba(200,170,255,.9)'; ctx.lineWidth = 2; ctx.setLineDash([4,3]); ctx.strokeRect(x-2, hy-2, S+4, S+4); ctx.setLineDash([]); }
   put(9, {icon:'🎒', key:'I', active: p.pts>0, count: p.pts>0 ? '+'+p.pts : null}, p.pts>0 ? `背包 · ${p.pts} 个属性点未分配` : '背包 · I');
   // 分组细线
   ctx.fillStyle = 'rgba(255,215,94,.35)'; for(const i of [4,7]){ const x = slotAt(i) - SEP/2 - 1; ctx.fillRect(x, hy + 6, 2, S - 12); }
@@ -4737,7 +4789,7 @@ function drawLogo(x, y, size, align='left'){
 function titleMenuItems(){
   const L = [{n:'开始游戏', k:'new', d:'选择英雄、职业与武器，开始新的冒险'}];
   if(titleLastPick) L.push({n:'快速开始', k:'quick', d:`沿用上次：${CHAR_INFO[CHAR_ORDER[selC]].n} · ${CLASS_INFO[CLASS_ORDER[selK]].n} · ${WEAPONS[START_W[selW]].n}`});
-  L.push({n:'英雄', k:'hero', d:'查看并更换英雄外观'}, {n:'操作说明', k:'help', d:'键位与战斗技巧'}, {n:'设置', k:'settings', d:'音量与静音'});
+  L.push({n:'英雄', k:'hero', d:'查看并更换英雄外观'}, {n:'操作说明', k:'help', d:'键位与战斗技巧'}, {n:'设置', k:'settings', d:'音效 / 音乐 / 环境音 音量'});
   return L;
 }
 function drawMenu(t){
@@ -4954,22 +5006,25 @@ function drawLoadout(t){
 // ---------- 浮层：设置 / 操作说明 ----------
 function drawTitleOverlay(){
   ctx.fillStyle = 'rgba(0,0,0,.6)'; ctx.fillRect(0,0,VW,VH);
-  const w = TS.overlay==='help' ? 640 : 420, h = TS.overlay==='help' ? 420 : 230, x = VW/2 - w/2, y = VH/2 - h/2;
+  const w = TS.overlay==='help' ? 640 : 460, h = TS.overlay==='help' ? 420 : 300, x = VW/2 - w/2, y = VH/2 - h/2;
   glassPanel(x, y, w, h, {a:0.92, edge:'#ffd860'});
   titleRects.push({x:0, y:0, w:VW, h:VH, kind:'ovbg'});
   titleRects.push({x, y, w, h, kind:'ovpanel'});
   if(TS.overlay==='settings'){
     txt('设置', x + 24, y + 34, 22, '#ffe08a', 'left', '"Microsoft YaHei",sans-serif');
-    const v = window.SFX ? SFX.vol : 0.6, muted = window.SFX && SFX.muted;
-    txt('音效音量', x + 24, y + 86, 14, '#ddd');
-    const bx = x + 120, bw = w - 200, by = y + 80; ctx.fillStyle = 'rgba(255,255,255,.12)'; ctx.fillRect(bx, by, bw, 10); ctx.fillStyle = '#ffd860'; ctx.fillRect(bx, by, bw*v, 10);
-    ctx.fillStyle = '#fff'; ctx.fillRect(bx + bw*v - 5, by - 5, 10, 20);
-    txt(Math.round(v*100) + '%', x + w - 30, y + 86, 13, '#ddd', 'right');
-    titleRects.push({x:bx-6, y:by-10, w:bw+12, h:30, kind:'vol', bx, bw});
-    txt('静音', x + 24, y + 134, 14, '#ddd');
-    const tx2 = x + 120, ty2 = y + 122, on = !muted; glassPanel(tx2, ty2, 64, 26, {a:0.6, edge: on ? '#7affaa' : '#ff7a7a', r:13});
+    const muted = window.SFX && SFX.muted;
+    [['音效','vol','setVol'],['音乐','mvol','setMVol'],['环境音','avol','setAVol']].forEach(([lab,key,fn],i)=>{
+      const v = window.SFX ? SFX[key] : 0.5, yy = y + 78 + i*42, bx = x + 120, bw = w - 200;
+      txt(lab, x + 24, yy + 5, 14, '#ddd');
+      ctx.fillStyle = 'rgba(255,255,255,.12)'; ctx.fillRect(bx, yy, bw, 10); ctx.fillStyle = '#ffd860'; ctx.fillRect(bx, yy, bw*v, 10);
+      ctx.fillStyle = '#fff'; ctx.fillRect(bx + bw*v - 5, yy - 5, 10, 20);
+      txt(Math.round(v*100) + '%', x + w - 30, yy + 5, 13, '#ddd', 'right');
+      titleRects.push({x:bx-6, y:yy-10, w:bw+12, h:30, kind:'vol', bx, bw, fn});
+    });
+    txt('全部静音', x + 24, y + 222, 14, '#ddd');
+    const tx2 = x + 120, ty2 = y + 210, on = !muted; glassPanel(tx2, ty2, 64, 26, {a:0.6, edge: on ? '#7affaa' : '#ff7a7a', r:13});
     ctx.fillStyle = on ? '#7affaa' : '#ff7a7a'; ctx.beginPath(); ctx.arc(on ? tx2 + 50 : tx2 + 14, ty2 + 13, 9, 0, 7); ctx.fill();
-    txt(on ? '开' : '关', tx2 + 80, ty2 + 13, 13, '#ddd');
+    txt(on ? '有声' : '静音', tx2 + 80, ty2 + 13, 13, '#ddd');
     titleRects.push({x:tx2, y:ty2, w:64, h:26, kind:'mute'});
     txt('游戏中：N 静音 · [ ] 调音量', x + 24, y + h - 26, 11, '#8a86a8');
   } else {
@@ -5035,7 +5090,7 @@ function titleClick(mxu, myu){
   if(TS.overlay){
     const ov = titleRects.filter(r=>mxu>=r.x && mxu<=r.x+r.w && myu>=r.y && myu<=r.y+r.h);
     const top = ov.find(r=>r.kind==='vol' || r.kind==='mute');
-    if(top && top.kind==='vol' && window.SFX){ SFX.setVol((mxu - top.bx)/top.bw); if(SFX.muted) SFX.toggle(); SFX.lib.click(); }
+    if(top && top.kind==='vol' && window.SFX){ SFX[top.fn]((mxu - top.bx)/top.bw); if(SFX.muted) SFX.toggle(); SFX.lib.click(); }
     else if(top && top.kind==='mute' && window.SFX){ SFX.toggle(); }
     else if(!ov.some(r=>r.kind==='ovpanel')) TS.overlay = null;
     return;
@@ -5134,6 +5189,6 @@ function loop(now){
 }
 requestAnimationFrame(loop);
 </script>
-<script src="sfx.js?v=1"></script>
+<script src="sfx.js?v=2"></script>
 </body>
 </html>
