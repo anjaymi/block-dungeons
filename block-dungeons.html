@@ -960,6 +960,11 @@ function unlockVis(it, k){ const b = baseVis(it, k); if(!b) return; const key = 
 const ARM_VN = [['皮甲','斜挎皮甲','护背皮甲'],['链甲','斜挎链甲','护背链甲'],['板甲','斜挎板甲','护背板甲']], BOOT_VN = ['短靴','高筒靴','护趾靴'];
 function visName(k, t, v){ return k==='helm' ? HELM_VN[TIER_HELM[t][v]] : k==='armor' ? ARM_VN[t][v] : BOOT_VN[v]; }
 function cycleTmog(k, dir){ const list = [null].concat(visBook[k] || []), i = list.indexOf(tmog[k] || null); tmog[k] = list[(i + (dir||1) + list.length) % list.length]; if(!tmog[k]) delete tmog[k]; saveVis(); if(player) recalc(); }
+const DYES = [null, ['#a83232','绯红'], ['#2e4e9a','靛蓝'], ['#3a7a3a','森绿'], ['#6a3a8a','暗紫'], ['#c8a040','金'], ['#2a2a30','墨黑'], ['#e8e8e0','雪白'], ['#c86a2a','橙铜'], ['#3a8a8a','青']];
+let dye = lsJ('bd_dye', {});
+function cycleDye(k, dir){ const n = DYES.length, i = dye[k] || 0; dye[k] = (i + (dir||1) + n) % n; if(!dye[k]) delete dye[k]; localStorage.setItem('bd_dye', JSON.stringify(dye)); if(player) recalc(); }
+function dyeName(k){ return dye[k] ? DYES[dye[k]][1] : '原色'; }
+function dyeRect(k){ const [x,y,w] = DOLL[k]; return [x + w*CELL - 51, y + 2, 15, 12]; }
 function tmogRect(k){ const [x,y,w] = DOLL[k]; return [x + w*CELL - 34, y + 2, 15, 12]; }
 function toggleHelm(){ toggleHideVis('helm'); if(player && state!=='title') addText(player.x, player.y, 1.6, hideVis.helm ? '隐藏头盔' : '显示头盔', '#ffe08a', 1); }
 function eyeRect(k){ const [x,y,w] = DOLL[k]; return [x + w*CELL - 17, y + 2, 15, 12]; }
@@ -982,6 +987,7 @@ function gearVis(p){
   if(rawSkin) return g;
   for(const k of ['helm','armor','gloves','boots','belt']){ if(hideVis[k]) continue; let v = vis(p.eq[k]) || baseVis(p.eq[k], k);
     if(v && tmog[k] && VIS_SLOTS.includes(k)){ const [tt, vv] = tmog[k].split('-').map(Number); v = {c1: TIER_MAT[tt], c2: v.c2 || Q_ACC.normal, helm: TIER_HELM[tt][vv], tier: tt, v: vv, base: true, gem: !!v.gem, aura: v.aura}; }
+    if(v && dye[k] && VIS_SLOTS.includes(k)) v = Object.assign({}, v, {c1: DYES[dye[k]][0]});
     if(v) g[k] = v; }
   const sh = p.eq.offhand; if(sh && sh.type==='shield') g.shield = vis(sh) || {c1:sh.q==='rare'?'#c8b040':sh.q==='magic'?'#5a6ac8':'#8a6a3a', c2:'#c8c8d0'};
   for(const sid in SETS){ if(SETS[sid].vis && countSet(sid) >= SETS[sid].items.length){ g.aura = SETS[sid].vis.aura; g.auraSet = sid; } }
@@ -2083,6 +2089,7 @@ function itemLines(it){
     if(bv){
       const nm = it.type==='helm' ? HELM_VN[bv.helm] : it.type==='armor' ? ARM_VN[bv.tier][bv.v] : BOOT_VN[bv.v];
       L3.push([`外观：${nm}${bv.gem ? ' · 宝石' : ''}${(rawSkin || hideVis[it.type]) ? '（已隐藏）' : ''}`, '#d8b8ff']);
+      if(dye[it.type] && player && player.eq[it.type]===it) L3.push([`染色：${dyeName(it.type)}`, DYES[dye[it.type]][0]==='#2a2a30' ? '#aaa' : DYES[dye[it.type]][0]]);
       if(tmog[it.type] && player && player.eq[it.type]===it){ const [tt,vv] = tmog[it.type].split('-').map(Number); L3.push([`幻化为：${visName(it.type,tt,vv)}`, '#ffb8f0']); } } }
   if(it.def!==undefined){ const d = itemDef(it,S); L3.push([`防御：${d}`, d!==it.def ? QCOL.magic : '#fff']); }
   if(it.block) L3.push([`格挡几率：${it.block + (S.block||0)}%`, '#fff']);
@@ -2306,6 +2313,7 @@ let uiHover = null, uiScale = 1, uiOX = 0, uiOY = 0, uiFlash = 0;
 function uiLocal(){ return [(mouse.x-uiOX)/uiScale, (mouse.y-uiOY)/uiScale]; }
 function uiHit(){
   const [mx, my] = uiLocal(), p = player;
+  for(const k of VIS_SLOTS){ if(!p.eq[k]) continue; const [dx,dy,dw,dh] = dyeRect(k); if(mx>=dx-2 && mx<dx+dw+2 && my>=dy-2 && my<dy+dh+2) return {kind:'dye', slot:k}; }
   for(const k of VIS_SLOTS){ if(!p.eq[k]) continue; const [tx,ty,tw,th] = tmogRect(k); if(mx>=tx-2 && mx<tx+tw+2 && my>=ty-2 && my<ty+th+2) return {kind:'tmog', slot:k}; }
   for(const k of VIS_SLOTS){ if(!p.eq[k]) continue; const [ex,ey,ew,eh] = eyeRect(k); if(mx>=ex-2 && mx<ex+ew+2 && my>=ey-2 && my<ey+eh+2) return {kind:'eye', slot:k}; }
   for(const k in DOLL){ const [x,y,w,h] = DOLL[k]; if(mx>=x && mx<x+w*CELL && my>=y && my<y+h*CELL) return {kind:'slot', slot:k}; }
@@ -2363,6 +2371,7 @@ function bagClick(btn, shift, ctrl){
   if(h.kind==='junk' && btn===0){ salvageJunk(); return; }
   if(h.kind==='idall'){ let n = 0; const all = p.bag.map(b=>b.it).concat(EQ_SLOTS.map(k=>p.eq[k]).filter(Boolean)); for(const it of all) if(!it.ident && p.idScrolls>0){ identify(it); n++; } if(!n && p.idScrolls>0) msg('没有需要鉴定的物品'); recalc(); return; }
   if(h.kind==='sort'){ const its = p.bag.map(b=>b.it).sort((a,b)=>(b.w*b.h)-(a.w*a.h)); p.bag = []; for(const it of its) if(!addToBag(it)) dropItemAt(it,p.x,p.y); return; }
+  if(h.kind==='dye'){ cycleDye(h.slot, btn===2 ? -1 : 1); if(window.SFX) SFX.lib.click(); return; }
   if(h.kind==='tmog'){ cycleTmog(h.slot, btn===2 ? -1 : 1); if(window.SFX) SFX.lib.click(); return; }
   if(h.kind==='eye'){ if(btn===0){ toggleHideVis(h.slot); if(window.SFX) SFX.lib.click(); } return; }
   if(h.kind==='transmute'){ transmute(); return; }
@@ -2514,6 +2523,11 @@ function drawBag(){
       ctx.strokeStyle = hid ? '#777' : '#ffe08a'; ctx.lineWidth = 1.2; ctx.beginPath(); ctx.ellipse(ex+ew/2, ey+eh/2, 6, 3.6, 0, 0, 7); ctx.stroke();
       if(!hid){ ctx.fillStyle = '#ffe08a'; ctx.beginPath(); ctx.arc(ex+ew/2, ey+eh/2, 1.8, 0, 7); ctx.fill(); }
       else { ctx.strokeStyle = '#ff7a7a'; ctx.beginPath(); ctx.moveTo(ex+2, ey+eh-1); ctx.lineTo(ex+ew-2, ey+1); ctx.stroke(); }
+      { const [dx,dy,dw,dh] = dyeRect(k), hv = uiHover && uiHover.kind==='dye' && uiHover.slot===k;
+        ctx.fillStyle = hv ? 'rgba(255,255,255,.3)' : 'rgba(0,0,0,.55)'; ctx.fillRect(dx, dy, dw, dh);
+        if(dye[k]){ ctx.fillStyle = DYES[dye[k]][0]; ctx.fillRect(dx+3, dy+2, dw-6, dh-4); ctx.strokeStyle = '#fff'; ctx.lineWidth = 1; ctx.strokeRect(dx+3, dy+2, dw-6, dh-4); }
+        else T('染', dx+dw/2, dy+dh/2+1, 10, '#9a8aa8', 'center');
+        if(hv) T(`染色：${dyeName(k)}（左键下一色 右键上一色）`, dx+dw/2, dy-8, 11, '#fff', 'center'); }
       { const [tx,ty,tw,th] = tmogRect(k), on = !!tmog[k], hv = uiHover && uiHover.kind==='tmog' && uiHover.slot===k;
         ctx.fillStyle = hv ? 'rgba(255,184,240,.35)' : on ? 'rgba(120,40,110,.8)' : 'rgba(0,0,0,.55)'; ctx.fillRect(tx, ty, tw, th);
         T('幻', tx+tw/2, ty+th/2+1, 10, on ? '#ffb8f0' : '#9a8aa8', 'center');
