@@ -49,6 +49,18 @@ function measure(s, size = 14, weight = 'bold'){ ctx.font = `${weight} ${size}px
 // ---------- 面板（可带标题条）----------
 function panel(x, y, w, h, o = {}){
   bevel(x, y, w, h, {alpha: o.alpha ?? 0.94, face: o.face});
+  // 面板内缘高光：让半透明石板在不同主题背景上仍有清晰的材质边界。
+  ctx.save(); ctx.globalAlpha = (o.alpha ?? 0.94) * 0.58;
+  ctx.strokeStyle = 'rgba(255,255,255,.16)'; ctx.lineWidth = 1;
+  ctx.strokeRect(R(x)+3.5, R(y)+3.5, Math.max(0,R(w)-7), Math.max(0,R(h)-7));
+  ctx.restore();
+  // 金属框四角铆钉：补足参考图里强烈的金色边框与装备感。
+  ctx.save(); ctx.globalAlpha = (o.alpha ?? 0.94) * 0.9; ctx.fillStyle = '#d99b3d';
+  const rr = Math.max(3, Math.min(5, R(Math.min(w,h)*.045)));
+  for(const p of [[R(x)+6,R(y)+6],[R(x+w)-6,R(y)+6],[R(x)+6,R(y+h)-6],[R(x+w)-6,R(y+h)-6]]){
+    ctx.beginPath(); ctx.moveTo(p[0],p[1]-rr); ctx.lineTo(p[0]+rr,p[1]); ctx.lineTo(p[0],p[1]+rr); ctx.lineTo(p[0]-rr,p[1]); ctx.closePath(); ctx.fill();
+  }
+  ctx.restore();
   if(o.title){
     const th = o.th || 26;
     ctx.fillStyle = 'rgba(0,0,0,.28)'; ctx.fillRect(R(x)+2, R(y)+2, R(w)-4, th);
@@ -63,7 +75,10 @@ function slot(x, y, s, o = {}){
   x = R(x); y = R(y);
   bevel(x, y, s, s, {inset:true, alpha:o.alpha ?? 0.96});
   if(o.active){ ctx.strokeStyle = C.gold; ctx.lineWidth = 2; ctx.strokeRect(x+1, y+1, s-2, s-2); }
-  else if(o.col && !(o.cd > 0) && !o.disabled){ ctx.fillStyle = o.col; ctx.globalAlpha = 0.9; ctx.fillRect(x+2, y+s-4, s-4, 2); ctx.globalAlpha = 1; }
+  else if(o.col && !(o.cd > 0) && !o.disabled){
+    ctx.fillStyle = o.col; ctx.globalAlpha = 0.9; ctx.fillRect(x+2, y+s-4, s-4, 2);
+    ctx.globalAlpha = 0.42; ctx.strokeStyle = o.col; ctx.lineWidth = 1; ctx.strokeRect(x+2.5, y+2.5, s-5, s-5); ctx.globalAlpha = 1;
+  }
   if(o.icon){
     ctx.globalAlpha = o.disabled ? 0.35 : 1;
     ctx.font = `${o.size || R(s*0.52)}px ${FONT}`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillStyle = '#fff';

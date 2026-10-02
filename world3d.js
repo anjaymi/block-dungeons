@@ -252,6 +252,10 @@ function init(){
     glc.style.zIndex = '0'; cv.style.zIndex = '1'; glc.style.pointerEvents = 'none';
     cv.parentNode.insertBefore(glc, cv);
     renderer = new T.WebGLRenderer({canvas:glc, antialias:true, alpha:true, powerPreference:'high-performance'});
+    // 统一 Three 与 Canvas 的色彩空间，避免 3D 地面/墙体在高分屏上发灰；新旧 Three 版本均兼容。
+    if(T.SRGBColorSpace && 'outputColorSpace' in renderer) renderer.outputColorSpace = T.SRGBColorSpace;
+    else if(T.sRGBEncoding && 'outputEncoding' in renderer) renderer.outputEncoding = T.sRGBEncoding;
+    if(T.ACESFilmicToneMapping !== undefined){ renderer.toneMapping = T.ACESFilmicToneMapping; renderer.toneMappingExposure = 1.08; }
     glc.addEventListener('webglcontextlost', e => { e.preventDefault(); glLost = true; glc.style.visibility = 'hidden'; console.warn('[World3D] WebGL 上下文丢失，暂时回退 2D'); }, false);
     glc.addEventListener('webglcontextrestored', () => { glLost = false; builtFor = null; builtTheme = null; console.warn('[World3D] WebGL 上下文已恢复，重建场景'); }, false);
     renderer.sortObjects = true;
@@ -448,6 +452,7 @@ function build(o){
   const lc = cfg.light;
   hemi.color.setHex(lc.sky); hemi.groundColor.setHex(lc.ground); hemi.intensity = lc.hemi;
   sun.intensity = lc.sun;
+  if(T.ACESFilmicToneMapping !== undefined) renderer.toneMappingExposure = lc.exposure || 1.08;
   for(const l of torchLights) l.color.setHex(lc.torch);
   console.log(`[World3D] 构建完成 ${o.theme && o.theme.name} · ${inst} 实例 / ${draws} 批次 · ${(performance.now()-t0).toFixed(0)}ms`);
 }
@@ -491,9 +496,9 @@ function updateLights(o){
     const l = torchLights[n], e = n < cnt ? {t:nearT[n]} : null;
     if(!e){ l.intensity = 0; continue; }
     const fl = 0.85 + 0.15*Math.sin(now/90 + e.t.ph) + 0.05*Math.sin(now/37 + e.t.ph*3);
-    l.position.set(e.t.i+0.5, -(e.t.j+1.25), 1.15); l.intensity = 3.2*fl;
+    l.position.set(e.t.i+0.5, -(e.t.j+1.25), 1.15); l.intensity = 4.25*fl;
   }
-  if(o.exitOpen && o.exitPos){ exitLight.position.set(o.exitPos.x, -o.exitPos.y, 0.8); exitLight.intensity = 3 + Math.sin(now/200); }
+  if(o.exitOpen && o.exitPos){ exitLight.position.set(o.exitPos.x, -o.exitPos.y, 0.8); exitLight.intensity = 4.2 + Math.sin(now/200); }
   else exitLight.intensity = 0;
 }
 function frame(o){

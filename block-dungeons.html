@@ -2,11 +2,12 @@
 <html lang="zh">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,maximum-scale=1,user-scalable=no">
 <title>方块地牢 · Block Dungeons</title>
 <style>
-  html,body{margin:0;height:100%;background:#000;overflow:hidden;cursor:none;user-select:none}
-  canvas{display:block;width:100vw;height:100vh}
+  html,body{margin:0;height:100%;background:#000;overflow:hidden;cursor:none;user-select:none;touch-action:none;overscroll-behavior:none}
+  canvas{display:block;width:100vw;height:100vh;touch-action:none}
+  @media (pointer:coarse){html,body{cursor:default}}
 </style>
 </head>
 <body>
@@ -40,7 +41,10 @@ function setZoom(z){ ZOOM = Math.max(1, Math.min(2.2, z)); try { localStorage.se
 // ---- 分辨率适配：以 1280×760 为基准，世界与 UI 随屏幕等比缩放 ----
 const autoS = () => Math.max(0.75, Math.min(2.6, Math.min(cv.width/1280, cv.height/760)));   // 用真实画布尺寸：withZoom/withUI 内 VW/VH 会被临时缩小
 const EZ = () => ZOOM * autoS();                                     // 世界层有效缩放（2D 与 3D 共用）
-const US = () => Math.max(0.85, Math.min(2.2, Math.min(cv.width/1280, cv.height/760)));   // UI 缩放
+const US = () => {   // UI 缩放：横屏手机放宽虚拟画布，确保标题、背包、地图、结算等界面都能完整排版
+  const s = Math.min(cv.width/1280, cv.height/760);
+  return touchUIEnabled() ? Math.max(0.62, Math.min(2.2, s)) : Math.max(0.85, Math.min(2.2, s));
+};
 function withUI(fn){   // HUD / 标题 / 结算等界面按 US 等比放大（内部坐标仍按基准分辨率书写）
   const s = US(); if(Math.abs(s-1) < 0.01){ fn(); return; }
   const rw = VW, rh = VH, mx = mouse.x, my = mouse.y;
@@ -957,17 +961,20 @@ const ARM_VN = [['皮甲','斜挎皮甲','护背皮甲'],['链甲','斜挎链甲
 function visName(k, t, v){ return k==='helm' ? HELM_VN[TIER_HELM[t][v]] : k==='armor' ? ARM_VN[t][v] : BOOT_VN[v]; }
 function cycleTmog(k, dir){ const list = [null].concat(visBook[k] || []), i = list.indexOf(tmog[k] || null); tmog[k] = list[(i + (dir||1) + list.length) % list.length]; if(!tmog[k]) delete tmog[k]; saveVis(); if(player) recalc(); }
 function tmogRect(k){ const [x,y,w] = DOLL[k]; return [x + w*CELL - 34, y + 2, 15, 12]; }
+function toggleHelm(){ toggleHideVis('helm'); if(player && state!=='title') addText(player.x, player.y, 1.6, hideVis.helm ? '隐藏头盔' : '显示头盔', '#ffe08a', 1); }
 function eyeRect(k){ const [x,y,w] = DOLL[k]; return [x + w*CELL - 17, y + 2, 15, 12]; }
 function setRawSkin(v){ rawSkin = !!v; localStorage.setItem('bd_rawskin', rawSkin ? '1' : '0'); if(typeof player !== 'undefined' && player) recalc(); }
 const TIER_MAT = ['#7a5232', '#8e959e', '#c9ced8'];           // 皮 / 链 / 板
+const TIER_TONE = [['#7a5232','#5e3e26','#8e6a44','#6a4a3a'], ['#8e959e','#6e767f','#9a9078','#7d8a96'], ['#c9ced8','#b8bcc4','#d8cfb0','#aab4c8']];  // 每档 4 种色调：本色/深色/铜金/冷色
 const Q_ACC = {normal:'#5a4a3a', magic:'#5a7aff', rare:'#f0d040', unique:'#ffb040', set:'#40e070', runeword:'#e0c890'};
 const TIER_HELM = [['cap','hood','leatherband'], ['chainhood','visor','nasal'], ['greathelm','gh_horns','gh_wings']];
 const HELM_VN = {cap:'皮帽', hood:'兜帽', leatherband:'皮额带', chainhood:'链甲兜帽', visor:'面甲盔', nasal:'护鼻盔', greathelm:'全盔', gh_horns:'角盔', gh_wings:'翼盔'};
 function baseVis(it, k){
   if(!it || !['helm','armor','boots'].includes(k)) return null;
-  const t = Math.max(0, Math.min(2, it.tier|0)), c1 = TIER_MAT[t], c2 = Q_ACC[it.q] || Q_ACC.normal;
+  const t = Math.max(0, Math.min(2, it.tier|0)), c2 = Q_ACC[it.q] || Q_ACC.normal;
   const v = ((it.vs ?? it.uid ?? 0) % 3 + 3) % 3, hi = it.q==='rare' || it.q==='runeword';
-  return {c1, c2, helm: TIER_HELM[t][v], tier: t, v, base: true, gem: hi};
+  const tone = TIER_TONE[t][Math.floor((it.vs ?? it.uid ?? 0) / 3) % TIER_TONE[t].length];
+  return {c1: tone, c2, helm: TIER_HELM[t][v], tier: t, v, base: true, gem: hi};
 }
 function gearVis(p){
   const g = {}; if(!p.eq) return g;
@@ -1354,6 +1361,7 @@ function drawMinimap(){
 function drawMap(){
   ctx.fillStyle = 'rgba(4,4,10,.82)'; ctx.fillRect(0,0,VW,VH);
   txt(`第 ${floorN} 层 · ${theme.name}`, VW/2, 46, 24, '#ffe08a', 'center');
+  if(touchUIEnabled()) UIK.button(VW-132, 18, 112, 34, '关闭地图', {primary:true, size:12});
   const cell = Math.min(140, (VW-120)/GCOLS, (VH-180)/GROWS);
   mapHover = drawRoomMap(VW/2, VH/2+10, cell, cell*0.78, true);
   const lr = lockedRoom();
@@ -1427,7 +1435,147 @@ function computeFlow(pi,pj,maxD=30){
 // =====================================================================
 const BUF = 0.22;   // 输入缓冲时长
 let showDiag = false;
+// ---- 横屏手机触控层：左侧移动摇杆，右侧瞄准与动作按钮 ----
+const touch = {moveId:null, aimId:null, titleId:null, attackId:null, bowId:null, rollId:null, skillId:null, potionId:null, runId:null,
+  moveX:0, moveY:0, run:false, aimAngle:0, moveOrigin:null, aimOrigin:null};
+function touchUIEnabled(){
+  // 不能只看 ontouchstart / maxTouchPoints：Windows 触屏 PC、Surface 和桌面端触控模拟都会因此误进手机 HUD。
+  const shortSide=Math.min(innerWidth,innerHeight), longSide=Math.max(innerWidth,innerHeight);
+  const ua=(navigator.userAgent||'').toLowerCase();
+  const mobileUA=/android|iphone|ipod|ipad|windows phone|webos|blackberry|mobile/i.test(ua);
+  const appleTablet=navigator.platform==='MacIntel' && navigator.maxTouchPoints>1;
+  const coarse=typeof matchMedia==='function' && matchMedia('(pointer: coarse)').matches;
+  const noHover=typeof matchMedia==='function' && matchMedia('(any-hover: none)').matches;
+  const compactCoarse=coarse && noHover && shortSide<=680 && longSide<=1400;
+  // 手机 UA 直接走手机版；非手机 UA 只有在“窄屏 + 粗指针 + 无悬停”时才走手机版。
+  return ((mobileUA || appleTablet) && shortSide<=1024) || compactCoarse;
+}
+function touchScale(){ return Math.max(0.01, US()); }
+function touchSize(){ const s = touchScale(); return {w:cv.width/s, h:cv.height/s}; }
+function touchLayout(){
+  const {w,h} = touchSize();
+  return {
+    move:{x:110,y:h-120,r:88}, aim:{x:w-500,y:h-220,r:42},
+    attack:{x:w-170,y:h-120,r:70}, roll:{x:w-335,y:h-130,r:45},
+    bow:{x:w-335,y:h-52,r:44}, skill:{x:w-70,y:h-255,r:48},
+    potion:{x:w-250,y:h-255,r:44}, run:{x:w-430,y:h-205,r:32}, map:{x:w-88,y:48,r:22}, bag:{x:w-40,y:48,r:22}
+  };
+}
+function touchPoint(t){ const s = touchScale(); return {x:t.clientX/s, y:t.clientY/s}; }
+function touchNear(p,b,extra=0){ return Math.hypot(p.x-b.x,p.y-b.y) <= b.r+extra; }
+function touchButtonAt(x,y){
+  const L = touchLayout(), p = {x,y};
+  for(const k of ['attack','bow','roll','skill','potion','run','map','bag']) if(touchNear(p,L[k],10)) return k;
+  return null;
+}
+function touchStick(origin,p,max){
+  const dx = p.x-origin.x, dy = p.y-origin.y, d = Math.hypot(dx,dy) || 1, k = Math.min(1,d/max);
+  return {x:dx/d*k, y:dy/d*k};
+}
+function touchAimScreen(){
+  if(!player || state!=='play') return;
+  const d = Math.min(innerWidth*0.32, 260);
+  mouse.x = innerWidth*0.5 + Math.cos(touch.aimAngle)*d;
+  mouse.y = innerHeight*0.5 + Math.sin(touch.aimAngle)*d;
+}
+function touchAction(name, down){
+  if(state!=='play' || !player) return;
+  if(name==='attack'){ mouse.l = down; if(down) player.buf = {type:'atk', t:BUF}; }
+  else if(name==='bow'){ mouse.r = down; if(down) player.buf = {type:'bow', t:BUF}; }
+  else if(name==='roll' && down) player.buf = {type:'roll', t:BUF};
+  else if(name==='skill' && down) useClassSkill();
+  else if(name==='potion' && down) usePotion();
+  else if(name==='run') touch.run = down;
+  else if(name==='map' && down){ state='map'; player.buf=null; mouse.l=mouse.r=false; }
+  else if(name==='bag' && down){ state='bag'; player.buf=null; mouse.l=mouse.r=false; }
+}
+function touchUpgradeAt(x,y){
+  const {w,h} = touchSize(), cw = 220, chh = 280, gap = 30;
+  const tot = upgradeChoices.length*cw + (upgradeChoices.length-1)*gap;
+  const top = h/2 - chh/2 + 20;
+  for(let i=0;i<upgradeChoices.length;i++){
+    const rx = w/2 - tot/2 + i*(cw+gap);
+    if(x>=rx && x<=rx+cw && y>=top && y<=top+chh){ chooseUpgrade(i); return true; }
+  }
+  const ry = h/2 + chh/2 + 70;
+  if(x>=w/2-130 && x<=w/2+130 && y>=ry-20 && y<=ry+20){ reroll(); return true; }
+  return false;
+}
+function touchStart(e){
+  if(!touchUIEnabled()) return;
+  e.preventDefault();
+  const L = touchLayout();
+  for(const t of e.changedTouches){
+    const p = touchPoint(t);
+    mouse.x = t.clientX; mouse.y = t.clientY;
+    if(state==='title'){ titleClick(p.x,p.y); if(TS.drag) touch.titleId=t.identifier; continue; }
+    if(state==='dead'){ state='title'; TS.step='menu'; continue; }
+    if(state==='pause'){ state='play'; continue; }
+    if(state==='map'){
+      if(t.clientX > innerWidth-150 && t.clientY < 80) state='play';
+      else if(mapHover) mapClick();
+      else state='play';
+      continue;
+    }
+    if(state==='bag'){
+      const h = uiHit();
+      if(h && h.kind==='close') closeBag(); else bagClick(0,false,false);
+      continue;
+    }
+    if(state==='upgrade'){ touchUpgradeAt(p.x,p.y); continue; }
+    if(state!=='play') continue;
+    if(touch.moveId===null && touchNear(p,L.move,16)){
+      touch.moveId=t.identifier; touch.moveOrigin={x:L.move.x,y:L.move.y};
+      const v=touchStick(touch.moveOrigin,p,58); touch.moveX=v.x; touch.moveY=v.y; continue;
+    }
+    const b = touchButtonAt(p.x,p.y);
+    if(b){
+      if(b==='attack' && touch.attackId===null){ touch.attackId=t.identifier; touchAction('attack',true); }
+      else if(b==='bow' && touch.bowId===null){ touch.bowId=t.identifier; touchAction('bow',true); }
+      else if(b==='roll' && touch.rollId===null){ touch.rollId=t.identifier; touchAction('roll',true); }
+      else if(b==='skill' && touch.skillId===null){ touch.skillId=t.identifier; touchAction('skill',true); }
+      else if(b==='potion' && touch.potionId===null){ touch.potionId=t.identifier; touchAction('potion',true); }
+      else if(b==='run' && touch.runId===null){ touch.runId=t.identifier; touchAction('run',true); }
+      else if(b==='map') touchAction('map',true);
+      else if(b==='bag') touchAction('bag',true);
+      continue;
+    }
+    if(touch.aimId===null && touchNear(p,L.aim,14)){
+      touch.aimId=t.identifier; touch.aimOrigin={x:L.aim.x,y:L.aim.y};
+      const v=touchStick(touch.aimOrigin,p,42); if(Math.hypot(v.x,v.y)>0.08) touch.aimAngle=Math.atan2(v.y,v.x); continue;
+    }
+  }
+}
+function touchMove(e){
+  if(!touchUIEnabled()) return;
+  e.preventDefault();
+  for(const t of e.changedTouches){
+    const p = touchPoint(t);
+    if(t.identifier===touch.titleId && TS.drag){
+      const dx = p.x - TS.drag.x; TS.rot = TS.drag.rot + dx*0.012; TS.rotV = 0;
+      continue;
+    }
+    if(t.identifier===touch.moveId && touch.moveOrigin){ const v=touchStick(touch.moveOrigin,p,58); touch.moveX=v.x; touch.moveY=v.y; }
+    if(t.identifier===touch.aimId && touch.aimOrigin){ const v=touchStick(touch.aimOrigin,p,54); if(Math.hypot(v.x,v.y)>0.08) touch.aimAngle=Math.atan2(v.y,v.x); }
+  }
+}
+function touchEnd(e){
+  if(!touchUIEnabled()) return;
+  e.preventDefault();
+  for(const t of e.changedTouches){
+    if(t.identifier===touch.titleId){ touch.titleId=null; if(TS.drag){ TS.drag=null; TS.rotV=0.4; } }
+    if(t.identifier===touch.moveId){ touch.moveId=null; touch.moveX=touch.moveY=0; touch.moveOrigin=null; }
+    if(t.identifier===touch.aimId){ touch.aimId=null; touch.aimOrigin=null; }
+    if(t.identifier===touch.attackId){ touch.attackId=null; touchAction('attack',false); }
+    if(t.identifier===touch.bowId){ touch.bowId=null; touchAction('bow',false); }
+    if(t.identifier===touch.rollId) touch.rollId=null;
+    if(t.identifier===touch.skillId) touch.skillId=null;
+    if(t.identifier===touch.potionId) touch.potionId=null;
+    if(t.identifier===touch.runId){ touch.runId=null; touchAction('run',false); }
+  }
+}
 addEventListener('keydown', e=>{
+  if(e.code==='KeyO' && e.shiftKey && state!=='title'){ toggleHelm(); return; }
   if(e.code==='KeyO' && state!=='title'){ setRawSkin(!rawSkin); addText(player.x,player.y,1.6, rawSkin?'显示原皮':'显示装备外观','#ffe08a',1); return; }
   if(e.code==='F8'){ showDiag = !showDiag; if(showDiag && window.World3D) console.log('[World3D] diag', JSON.stringify(World3D.diag(player.x, player.y))); e.preventDefault(); return; }
   if(e.repeat){ if(e.code==='Space') e.preventDefault(); return; }
@@ -1491,6 +1639,10 @@ cv.addEventListener('mousedown', e=>{
 });
 addEventListener('mouseup', e=>{ if(e.button===0) mouse.l = false; if(e.button===2) mouse.r = false; });
 addEventListener('blur', ()=>{ for(const k in keys) keys[k]=false; mouse.l=mouse.r=false; });
+cv.addEventListener('touchstart', touchStart, {passive:false});
+cv.addEventListener('touchmove', touchMove, {passive:false});
+cv.addEventListener('touchend', touchEnd, {passive:false});
+cv.addEventListener('touchcancel', touchEnd, {passive:false});
 
 const noOffhand = k => { const W = WEAPONS[k]; return !!(W && (W.twoHand || W.twoH || W.dual)); };
 // =====================================================================
@@ -2145,7 +2297,7 @@ function drawDoll(T){
   for(const k in nm) if(gv[k]){ any = true; ctx.fillStyle = gv[k].c1; ctx.fillRect(cx-70, y-6, 12, 12); ctx.strokeStyle = gv[k].c2 || '#fff'; ctx.strokeRect(cx-70, y-6, 12, 12); T(nm[k] + (gv[k].helm && k==='helm' ? ' · ' + (HELM_N[gv[k].helm]||gv[k].helm) : ''), cx-52, y, 12, '#ddd'); y += 17; }
   if(!any) { T('装备套装 / 暗金物品', cx, y, 11.5, '#777', 'center'); T('会改变角色外观', cx, y+16, 11.5, '#777', 'center'); y += 32; }
   if(gv.aura){ T('✦ 全套光环：' + SETS[gv.auraSet].n, cx, y+6, 12, gv.aura, 'center'); }
-  T('鼠标悬停可旋转', cx, 536, 10.5, '#666', 'center');
+  T(touchUIEnabled() ? '触摸拖动可旋转' : '鼠标悬停可旋转', cx, 536, 10.5, '#666', 'center');
 }
 const DOLL = {helm:[430,52,2,2], amulet:[512,70,1,1], weapon:[310,92,2,4], armor:[430,130,2,3], offhand:[550,92,2,4], ring1:[390,250,1,1], ring2:[512,250,1,1], belt:[430,290,2,1], gloves:[310,240,2,2], boots:[550,240,2,2]};
 const GRID0 = [646, 52];
@@ -2163,6 +2315,7 @@ function uiHit(){
   if(mx>=646 && mx<756 && my>=330 && my<362) return {kind:'idall'};
   if(mx>=760 && mx<872 && my>=330 && my<362) return {kind:'junk'};
   if(mx>=876 && mx<986 && my>=330 && my<362) return {kind:'sort'};
+  if(touchUIEnabled() && mx>=1080 && mx<1188 && my>=8 && my<46) return {kind:'close'};
   for(let i=0;i<4;i++){ const y = 150 + i*30; if(p.pts>0 && mx>=230 && mx<258 && my>=y-12 && my<y+12) return {kind:'stat', i}; }
   if(mx>=310 && mx<352 && my>=66 && my<86) return {kind:'swap', set:0};
   if(mx>=356 && mx<398 && my>=66 && my<86) return {kind:'swap', set:1};
@@ -2203,6 +2356,7 @@ function salvageJunk(){
 }
 function bagClick(btn, shift, ctrl){
   const p = player, h = uiHit(); if(!h) { if(p.cursor && btn===0){ const [mx,my] = uiLocal(); if(mx<-DOLLW||mx>UIW||my<0||my>UIH){ dropItemAt(p.cursor, p.x, p.y); p.cursor = null; } } return; }
+  if(h.kind==='close'){ closeBag(); return; }
   const msg = m => addText(p.x,p.y,1.7,m,'#ff8a6a',0.9);
   if(h.kind==='stat' && btn===0){ const k = ['str','dex','vit','ene'][h.i]; const n = shift ? p.pts : 1; p.attr[k] += n; p.pts -= n; recalc(); return; }
   if(h.kind==='swap'){ if(p.swapSet!==h.set) swapWeapons(); return; }
@@ -2320,6 +2474,7 @@ function drawBag(){
   uiHover = uiHit();   // 每帧刷新悬停目标（之前从未赋值，导致背包内看不到物品名称/属性）
   ctx.fillStyle = 'rgba(0,0,0,.55)'; ctx.fillRect(0,0,VW,VH);
   ctx.save(); ctx.translate(uiOX, uiOY); ctx.scale(uiScale, uiScale);
+  if(touchUIEnabled()) UIK.button(1090, 10, 98, 30, '关闭', {primary:true, size:12});
   const F = '"Microsoft YaHei",sans-serif';
   const T = (s,x,y,sz,c,al='left')=>{ ctx.font = `${sz}px ${F}`; ctx.fillStyle = c; ctx.textAlign = al; ctx.textBaseline = 'middle'; ctx.fillText(s, x, y); };
   ctx.save(); ctx.beginPath(); ctx.rect(-DOLLW+12, 12, DOLLW-18, 536); ctx.clip(); drawDoll(T); ctx.restore();
@@ -2390,7 +2545,7 @@ function drawBag(){
   { const hov = uiHover && uiHover.kind==='junk'; UIK.button(762, 331, 108, 30, '🔨 批量分解', {hover:hov, size:12}); }
   { const hov = uiHover && uiHover.kind==='sort'; UIK.button(878, 331, 106, 30, '🧹 整理', {hover:hov, size:12}); }
   T(`绿宝石：${p.emeralds}`, 646, 384, 14, '#7affaa');
-  ['左键：拿起 / 放下 / 交换','右键：装备 / 卸下 / 鉴定','拿着宝石或符文点击有孔物品：镶嵌','Shift+左键 出售 · Ctrl+左键 分解 · X 换武器组 · I/Esc 关闭','拿着物品点击界面外：丢到地上'].forEach((l,i)=>T(l, 646, 414+i*20, 12, '#aaa'));
+  (touchUIEnabled() ? ['点击物品：拿起 / 放下 / 装备','点击宝石或符文，再点击有孔物品：镶嵌','右上角关闭背包 · 背包外点击物品：丢到地上'] : ['左键：拿起 / 放下 / 交换','右键：装备 / 卸下 / 鉴定','拿着宝石或符文点击有孔物品：镶嵌','Shift+左键 出售 · Ctrl+左键 分解 · X 换武器组 · I/Esc 关闭','拿着物品点击界面外：丢到地上']).forEach((l,i)=>T(l, 646, 414+i*20, 12, '#aaa'));
   // 提示框 & 光标物品
   const [mx, my] = uiLocal();
   if(p.cursor) drawItemIcon(p.cursor, mx - p.cursor.w*CELL/2, my - p.cursor.h*CELL/2, p.cursor.w*CELL, p.cursor.h*CELL, 0.9);
@@ -2447,6 +2602,7 @@ function moveInput(){
   if(keys.KeyS||keys.ArrowDown) y+=1;
   if(keys.KeyA||keys.ArrowLeft) x-=1;
   if(keys.KeyD||keys.ArrowRight) x+=1;
+  if(touchUIEnabled() && touch.moveId!==null){ x += touch.moveX; y += touch.moveY; }
   const l = Math.hypot(x,y); return l ? {x:x/l, y:y/l} : {x:0,y:0};
 }
 
@@ -3054,7 +3210,7 @@ function stepPlayer(dt){
   const mv = moveInput();
   // 耐力：按住 Shift 奔跑（翻滚结束后仍按住 = 直接接奔跑）；翻滚消耗 STA_ROLL
   if(p.sta === undefined){ p.sta = STA_MAX; p.staT = 0; p.exh = false; }
-  const shiftHeld = keys.ShiftLeft || keys.ShiftRight;
+  const shiftHeld = keys.ShiftLeft || keys.ShiftRight || touch.run;
   const wantRun = shiftHeld && (mv.x||mv.y) && p.st==='move' && grounded() && !p.exh && p.sta > 0;
   p.running = !!wantRun;
   if(p.running){ p.sta = Math.max(0, p.sta - STA_RUN*dt); p.staT = STA_DELAY; if(p.sta<=0){ p.exh = true; addText(p.x, p.y, 1.6, '力竭', '#ffd060', 1); } }
@@ -4493,9 +4649,13 @@ function render(){
   ctx.drawImage(lc,0,0);
   ctx.globalCompositeOperation = 'lighter';
   for(const t of torches){ const s = P(t.x,t.y,0.6); if(s[0]<-200||s[0]>VW+200||s[1]<-200||s[1]>VH+200) continue;
-    ctx.drawImage(SceneFX.radial('torchglow', 128, [[0,'rgba(255,140,40,.22)'],[1,'rgba(255,140,40,0)']]), s[0]-130, s[1]-130, 260, 260); }
+    ctx.drawImage(SceneFX.radial('torchglow-strong', 160, [[0,'rgba(255,154,48,.34)'],[.34,'rgba(255,105,24,.18)'],[1,'rgba(255,70,0,0)']]), s[0]-160, s[1]-160, 320, 320);
+    ctx.drawImage(SceneFX.radial('torchcore-warm', 64, [[0,'rgba(255,248,190,.72)'],[.3,'rgba(255,180,58,.36)'],[1,'rgba(255,100,0,0)']]), s[0]-32, s[1]-32, 64, 64);
+  }
+  if(exitOpen){ const s=P(exitPos.x,exitPos.y,.35); ctx.drawImage(SceneFX.radial('exitglow-cyan',128,[[0,'rgba(120,240,255,.42)'],[.35,'rgba(80,130,255,.18)'],[1,'rgba(40,80,255,0)']]),s[0]-128,s[1]-128,256,256); }
   ctx.globalCompositeOperation = 'source-over';
   if(window.SceneFX) SceneFX.over();
+  drawArtGrade();
 
   for(const t of texts){
     const s = P(t.x,t.y,t.z), life = t.follow?1.7:1.2; ctx.globalAlpha = t.t>life-0.3 ? (life-t.t)/0.3 : 1;
@@ -4566,7 +4726,7 @@ function drawPortrait(cx, cy, r){
 //  左上：楼层信息 + 附魔；右上：小地图 + 事件签；中上：首领血条；快捷栏上方：状态提示签
 // ---------------------------------------------------------------------
 let hudGhostHP = 1, hudTip = null;
-function drawHUD(){
+function drawLegacyHUD(){
   drawShotPips();
   const p = player, W = WEAPONS[p.weapon], K = UIK, C = K.C, now = performance.now();
   const S = VW < 900 ? 38 : 44, G = 5, SEP = 12;
@@ -4658,6 +4818,239 @@ function drawHUD(){
   K.text('滚轮/± 缩放 · H 判定框', VW-14, VH-12, 10, 'rgba(255,255,255,.35)', 'right', {shadow:0});
   // 悬停提示
   if(hudTip) K.chip(hudTip.x, hudTip.y - 22, hudTip.t, {align:'center', col:C.gold});
+}
+function drawReferenceMap(x, y, w, h){
+  const K = UIK;
+  K.panel(x, y, w, h, {title:`${theme.name} · 第 ${floorN} 层`, th:25, ts:13, alpha:0.9});
+  ctx.save(); ctx.beginPath(); ctx.rect(x+8, y+30, w-16, h-62); ctx.clip();
+  drawRoomMap(x+w/2, y+30+(h-62)/2, Math.min(38,(w-30)/GCOLS), Math.min(28,(h-76)/GROWS), false);
+  ctx.restore();
+  K.button(x+w-48, y+h-29, 34, 24, 'M', {primary:true, size:12});
+}
+function drawRefGlyph(label,x,y,s,col){
+  const k=Math.max(1,s/44), ink='#fff4dc', edge=col||'#ffd06a';
+  ctx.save(); ctx.translate(x,y); ctx.lineCap='round'; ctx.lineJoin='round'; ctx.strokeStyle=edge; ctx.fillStyle=ink;
+  ctx.shadowColor=edge; ctx.shadowBlur=Math.max(0,Math.round(k*4)); ctx.lineWidth=Math.max(2,Math.round(3*k));
+  if(label==='⚔'){
+    ctx.beginPath(); ctx.moveTo(-13*k,-14*k); ctx.lineTo(12*k,13*k); ctx.moveTo(13*k,-14*k); ctx.lineTo(-12*k,13*k); ctx.stroke();
+    ctx.shadowBlur=0; ctx.lineWidth=Math.max(2,Math.round(4*k)); ctx.strokeStyle=ink;
+    ctx.beginPath(); ctx.moveTo(-16*k,-9*k); ctx.lineTo(-8*k,-17*k); ctx.moveTo(16*k,-9*k); ctx.lineTo(8*k,-17*k); ctx.stroke();
+    ctx.strokeStyle=edge; ctx.lineWidth=Math.max(2,Math.round(2*k)); ctx.beginPath(); ctx.moveTo(-8*k,-5*k); ctx.lineTo(-15*k,2*k); ctx.moveTo(8*k,-5*k); ctx.lineTo(15*k,2*k); ctx.stroke();
+  } else if(label==='🧪'){
+    ctx.shadowBlur=0; ctx.fillStyle='rgba(28,30,52,.95)'; ctx.strokeStyle=edge; ctx.lineWidth=Math.max(2,Math.round(2*k));
+    ctx.beginPath(); ctx.moveTo(-5*k,-16*k); ctx.lineTo(5*k,-16*k); ctx.lineTo(5*k,-8*k); ctx.lineTo(12*k,7*k); ctx.quadraticCurveTo(0,18*k,-12*k,7*k); ctx.lineTo(-5*k,-8*k); ctx.closePath(); ctx.fill(); ctx.stroke();
+    ctx.fillStyle='#ff466e'; ctx.beginPath(); ctx.moveTo(-9*k,1*k); ctx.quadraticCurveTo(0,4*k,9*k,1*k); ctx.lineTo(11*k,7*k); ctx.quadraticCurveTo(0,15*k,-11*k,7*k); ctx.closePath(); ctx.fill();
+    ctx.fillStyle='#fff'; ctx.fillRect(-3*k,-22*k,6*k,5*k);
+  } else if(label==='✦'){
+    ctx.shadowBlur=0; ctx.fillStyle='rgba(91,38,191,.88)'; ctx.strokeStyle='#d9b8ff';
+    ctx.beginPath(); ctx.moveTo(0,-18*k); ctx.lineTo(11*k,0); ctx.lineTo(0,18*k); ctx.lineTo(-11*k,0); ctx.closePath(); ctx.fill(); ctx.stroke();
+    ctx.fillStyle='#fff'; ctx.beginPath(); ctx.moveTo(0,-13*k); ctx.lineTo(4*k,0); ctx.lineTo(0,7*k); ctx.lineTo(-4*k,0); ctx.closePath(); ctx.fill();
+  } else if(label==='翻'){
+    ctx.shadowBlur=0; ctx.strokeStyle=ink; ctx.lineWidth=Math.max(2,Math.round(4*k));
+    ctx.beginPath(); ctx.arc(-3*k,-9*k,4*k,0,Math.PI*2); ctx.moveTo(-2*k,-4*k); ctx.lineTo(-8*k,7*k); ctx.lineTo(5*k,9*k); ctx.moveTo(-2*k,-2*k); ctx.lineTo(9*k,-8*k); ctx.stroke();
+    ctx.strokeStyle=edge; ctx.lineWidth=Math.max(2,Math.round(2*k)); ctx.beginPath(); ctx.moveTo(8*k,8*k); ctx.lineTo(15*k,8*k); ctx.lineTo(11*k,3*k); ctx.stroke();
+  } else if(label==='☾'){
+    ctx.shadowBlur=0; ctx.fillStyle='#9d52ff'; ctx.strokeStyle='#e9c8ff';
+    ctx.beginPath(); ctx.arc(0,0,15*k,.45,5.45); ctx.arc(7*k,-5*k,13*k,5.45,.45,true); ctx.closePath(); ctx.fill(); ctx.stroke();
+    ctx.fillStyle='#fff'; ctx.beginPath(); ctx.arc(12*k,-13*k,2*k,0,7); ctx.fill();
+  } else if(label==='↗'){
+    ctx.shadowBlur=0; ctx.strokeStyle=ink; ctx.lineWidth=Math.max(3,Math.round(4*k));
+    ctx.beginPath(); ctx.moveTo(-12*k,13*k); ctx.lineTo(-2*k,2*k); ctx.lineTo(4*k,8*k); ctx.lineTo(14*k,-8*k); ctx.moveTo(5*k,-8*k); ctx.lineTo(14*k,-8*k); ctx.lineTo(14*k,1*k); ctx.stroke();
+  } else if(label==='图'){
+    ctx.shadowBlur=0; ctx.fillStyle='rgba(38,45,72,.92)'; ctx.strokeStyle=edge; ctx.lineWidth=Math.max(2,Math.round(2*k));
+    ctx.beginPath(); ctx.moveTo(-16*k,-11*k); ctx.lineTo(-5*k,-15*k); ctx.lineTo(6*k,-11*k); ctx.lineTo(16*k,-15*k); ctx.lineTo(16*k,11*k); ctx.lineTo(6*k,15*k); ctx.lineTo(-5*k,11*k); ctx.lineTo(-16*k,15*k); ctx.closePath(); ctx.fill(); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(-5*k,-15*k); ctx.lineTo(-5*k,11*k); ctx.moveTo(6*k,-11*k); ctx.lineTo(6*k,15*k); ctx.stroke();
+  } else if(label==='包'){
+    ctx.shadowBlur=0; ctx.fillStyle='rgba(41,44,64,.95)'; ctx.strokeStyle=edge; ctx.lineWidth=Math.max(2,Math.round(2*k));
+    ctx.beginPath(); ctx.roundRect(-15*k,-7*k,30*k,22*k,3*k); ctx.fill(); ctx.stroke(); ctx.beginPath(); ctx.arc(0,-7*k,7*k,Math.PI,0); ctx.stroke();
+    ctx.fillStyle=edge; ctx.fillRect(-3*k,-1*k,6*k,4*k);
+  } else if(label==='任'){
+    ctx.shadowBlur=0; ctx.fillStyle='rgba(41,44,64,.95)'; ctx.strokeStyle=edge; ctx.lineWidth=Math.max(2,Math.round(2*k));
+    ctx.beginPath(); ctx.moveTo(-12*k,-16*k); ctx.lineTo(14*k,-12*k); ctx.lineTo(10*k,16*k); ctx.lineTo(-15*k,11*k); ctx.closePath(); ctx.fill(); ctx.stroke();
+    ctx.strokeStyle=ink; ctx.beginPath(); ctx.moveTo(-7*k,-7*k); ctx.lineTo(8*k,-5*k); ctx.moveTo(-8*k,1*k); ctx.lineTo(6*k,3*k); ctx.stroke();
+  } else if(label==='设'){
+    ctx.shadowBlur=0; ctx.fillStyle=edge; ctx.beginPath();
+    for(let i=0;i<16;i++){ const a=i*Math.PI/8, r=i%2?11:16, px=Math.cos(a)*r*k, py=Math.sin(a)*r*k; i?ctx.lineTo(px,py):ctx.moveTo(px,py); } ctx.closePath(); ctx.fill();
+    ctx.fillStyle='#26243c'; ctx.beginPath(); ctx.arc(0,0,7*k,0,7); ctx.fill();
+  } else {
+    ctx.shadowBlur=0; ctx.fillStyle=ink; ctx.font=`900 ${Math.max(14,Math.round(s*.58))}px \"Microsoft YaHei\",sans-serif`; ctx.textAlign='center'; ctx.textBaseline='middle'; ctx.fillText(label,0,1);
+  }
+  ctx.restore();
+}
+function drawRefShape(b, compact){
+  ctx.beginPath();
+  if(compact){
+    const r=b.r, cut=Math.max(5,r*.22);
+    ctx.moveTo(b.x-r+cut,b.y-r); ctx.lineTo(b.x+r-cut,b.y-r); ctx.lineTo(b.x+r,b.y-r+cut); ctx.lineTo(b.x+r,b.y+r-cut); ctx.lineTo(b.x+r-cut,b.y+r); ctx.lineTo(b.x-r+cut,b.y+r); ctx.lineTo(b.x-r,b.y+r-cut); ctx.lineTo(b.x-r,b.y-r+cut); ctx.closePath();
+  } else ctx.arc(b.x,b.y,b.r,0,Math.PI*2);
+}
+function drawRefButton(b, label, col, active=false, sub=''){
+  ctx.save();
+  const compact=b.r<=28 && b.y<90;
+  ctx.globalAlpha = active ? 1 : .92;
+  ctx.shadowColor = col; ctx.shadowBlur = active ? 24 : 10;
+  const grad=ctx.createRadialGradient(b.x-b.r*.32,b.y-b.r*.38,2,b.x,b.y,b.r*1.18);
+  grad.addColorStop(0,active?'rgba(238,242,255,.78)':'rgba(67,73,101,.82)'); grad.addColorStop(.38,active?'rgba(74,112,188,.72)':'rgba(25,28,50,.94)'); grad.addColorStop(1,'rgba(5,7,16,.98)');
+  ctx.fillStyle=grad; drawRefShape(b,compact); ctx.fill();
+  ctx.shadowBlur=0; ctx.strokeStyle=compact?'#e5b65c':col; ctx.lineWidth=active?4:2.5; drawRefShape(b,compact); ctx.stroke();
+  ctx.strokeStyle='rgba(255,255,255,.3)'; ctx.lineWidth=1.2; drawRefShape({x:b.x,y:b.y-1,r:b.r-5},compact); ctx.stroke();
+  if(!compact){
+    ctx.fillStyle='#eab65c'; const rr=b.r*.78;
+    for(const a of [0,Math.PI/2,Math.PI,Math.PI*1.5]){ const px=b.x+Math.cos(a)*rr, py=b.y+Math.sin(a)*rr; ctx.save(); ctx.translate(px,py); ctx.rotate(Math.PI/4); ctx.fillRect(-2,-2,4,4); ctx.restore(); }
+  }
+  drawRefGlyph(label,b.x,b.y,Math.min(52,b.r*1.05),col);
+  if(sub){ ctx.shadowBlur=0; ctx.fillStyle='#fff'; ctx.font='800 12px "Microsoft YaHei",sans-serif'; ctx.textAlign='center'; ctx.textBaseline='middle'; ctx.fillText(sub,b.x,b.y+b.r+16); }
+  ctx.restore();
+}
+function drawReferenceDesktopHUD(){
+  const p = player, K = UIK, C = K.C, now = performance.now();
+  drawShotPips();
+  // 左上：层数、目标与资源
+  K.bevel(16, 16, 58, 106, {inset:true});
+  K.text(String(floorN), 45, 68, 38, '#fff', 'center');
+  K.panel(72, 16, 344, 106, {title:`第 ${floorN} 层 · ${theme.name}`, th:27, ts:16, alpha:0.92});
+  K.text('✦ 探索地牢，找到下一层的入口', 92, 68, 13, '#e7dfc8');
+  K.text(`◆ ${p.emeralds}`, 94, 101, 14, '#7affaa');
+  K.text(`⚿ ${stats.kills}`, 184, 101, 14, '#ffc850');
+  K.text(`${(CLASS_INFO[p.cls]||{}).ico||'✦'} ${(CLASS_INFO[p.cls]||{}).n||''} Lv.${p.lvl}`, 390, 101, 13, (CLASS_INFO[p.cls]||{}).col||'#c8b0ff', 'right');
+  // 左侧竖栏：PC 这里展示肉鸽局内 Buff / 附魔，不再重复放战斗快捷键。
+  const buffKeys=Object.keys(p.ench||{}).filter(k=>p.ench[k]>0 && ENCH[k]);
+  const buffColor=k=>/^m_/.test(k)?'#8ed7ff':/fire|thunder|boom|power|crit|sharp|multi/.test(k)?'#ffb05c':/health|leech|potion|dodge|swift|soul/.test(k)?'#78e6a0':'#c59cff';
+  const roman=['','I','II','III','IV','V','VI'];
+  if(!buffKeys.length){
+    K.slot(14,166,52,{icon:'✦',col:'#55566f',disabled:true,count:0});
+    K.text('暂无 Buff',76,192,11,'#8f8b9f');
+  } else buffKeys.slice(0,6).forEach((k,i)=>{
+    const E=ENCH[k], col=buffColor(k), y=166+i*62, lv=p.ench[k];
+    K.slot(14,y,52,{icon:E.ico,col,active:true,count:lv});
+    K.text(E.n,76,y+21,11,'#efe5ff');
+    K.text(`${roman[lv]||lv}级`,76,y+39,10,col);
+  });
+  // 中上首领血条
+  if(bossRef && bossRef.hp>0 && bossRef.awake){
+    const bw=Math.min(620,VW*0.52), bx=VW/2-bw/2;
+    K.panel(bx-16, 12, bw+32, 70, {alpha:0.94});
+    K.text('💀 ' + (bossRef.lord?'领主 · ':'') + (bossRef.voxName||'深渊徘徊者'), VW/2, 31, 16, bossRef.enraged?'#ff6048':C.gold, 'center');
+    K.bar(bx, 48, bw, 19, bossRef.hp/bossRef.maxhp, {col:bossRef.enraged?'#ff3828':'#e23a32', hi:'#ff9270', lo:'#69131b', seg:12, value:`${Math.ceil(bossRef.hp)} / ${bossRef.maxhp}`, ts:12});
+  }
+  drawReferenceMap(VW-286, 14, 268, 184);
+  // 左下：头像与资源条
+  const py=VH-70;
+  K.bevel(22, VH-138, 112, 112, {inset:true});
+  ctx.save(); ctx.beginPath(); ctx.rect(28,VH-132,100,100); ctx.clip(); drawPortrait(78, VH-82, 45); ctx.restore();
+  K.bevel(48, VH-40, 62, 22, {face:'#3a2a10', hi:'#c89a40', lo:'#1a1006'}); K.text(`Lv.${p.lvl}`,79,VH-28,13,C.gold,'center');
+  K.bar(148, VH-112, 310, 25, p.hp/p.maxhp, {col:'#e43e42', hi:'#ff9b80', lo:'#67161c', label:'❤', value:`${Math.ceil(p.hp)} / ${p.maxhp}`, ts:13});
+  K.bar(148, VH-78, 310, 18, p.mana/p.maxMana, {col:'#2c9eea', hi:'#8ee1ff', lo:'#123c74', label:'◆', value:`${Math.round(p.mana)} / ${p.maxMana}`, ts:12});
+  // 底部快捷栏
+  const S=58, G=8, items=[
+    {icon:(CLASS_INFO[p.cls]&&CLASS_INFO[p.cls].sk&&CLASS_INFO[p.cls].sk.ico)||'✦',key:'Q',col:'#d09cff'},
+    {icon:'🧪',key:'E',cd:Math.max(0,p.potCD)/(18*(1-0.3*L('potion'))),col:'#ff7690'},
+    {icon:(SPELLS[p.spell]&&SPELLS[p.spell].ico)||'●',key:'R',col:'#a67cff'},
+    {icon:ARTS[0]?ARTS[0].ico:'✧',key:'1',col:ARTS[0]?ARTS[0].col:'#ffd56a'},
+    {icon:ARTS[1]?ARTS[1].ico:'✧',key:'2',col:ARTS[1]?ARTS[1].col:'#ffd56a'},
+    {icon:ARTS[2]?ARTS[2].ico:'✧',key:'3',col:ARTS[2]?ARTS[2].col:'#ffd56a'},
+    {icon:'⚔',key:'Space',col:'#ffe0a0'}
+  ];
+  const tw=items.length*S+(items.length-1)*G, sx=VW/2-tw/2, sy=VH-66;
+  items.forEach((o,i)=>K.slot(sx+i*(S+G),sy,S,o));
+  K.bar(sx, VH-11, tw, 7, p.xp/xpNeed(p.lvl), {col:C.xp,hi:C.xpHi,lo:C.xpLo,seg:18});
+  // 右下资源与菜单
+  K.text(`🪙 ${p.emeralds}`, VW-132, VH-78, 15, '#ffd75e', 'center');
+  K.text(`✦ ${Math.floor(p.souls)}`, VW-132, VH-48, 14, '#b78cff', 'center');
+  K.button(VW-170, VH-31, 52, 25, 'ESC', {primary:false, size:12}); K.text('菜单', VW-98, VH-19, 12, '#ddd', 'center');
+  if(banner.t>0){ ctx.globalAlpha=Math.min(1,banner.t); K.text(banner.txt,VW/2,VH*.22,28,C.gold,'center',{shadow:3}); ctx.globalAlpha=1; }
+}
+function drawReferenceMobileHUD(){
+  const p=player,K=UIK,C=K.C;
+  drawShotPips();
+  // 左上角色卡：头像 + 双资源条 + 层数/货币
+  K.bevel(18, 14, 104, 100, {inset:true});
+  ctx.save(); ctx.beginPath(); ctx.rect(24,20,92,86); ctx.clip(); drawPortrait(70,64,39); ctx.restore();
+  K.text(`Lv.${p.lvl}`, 35, 101, 13, C.gold, 'center');
+  K.bar(132, 26, 250, 21, p.hp/p.maxhp, {col:'#e43e42',hi:'#ff9b80',lo:'#67161c',value:`${Math.ceil(p.hp)} / ${p.maxhp}`,ts:12});
+  K.bar(132, 57, 250, 17, p.mana/p.maxMana, {col:'#2c9eea',hi:'#8ee1ff',lo:'#123c74',value:`${Math.round(p.mana)} / ${p.maxMana}`,ts:11});
+  K.text(`${(CLASS_INFO[p.cls]||{}).ico||'✦'} ${(CLASS_INFO[p.cls]||{}).n||''} Lv.${p.lvl}`, 132, 96, 13, (CLASS_INFO[p.cls]||{}).col||'#c8b0ff');
+  K.panel(18, 126, 360, 72, {alpha:0.9});
+  K.text(`⌖ 第 ${floorN} 层 · ${theme.name}`, 38, 148, 15, '#ffe08a');
+  K.text('🪙 ' + p.emeralds, 42, 180, 14, '#ffd75e'); K.text('⚿ ' + stats.kills, 132, 180, 14, '#ffc850'); K.text('✦ ' + Math.floor(p.souls), 220, 180, 14, '#bd91ff');
+  // 顶部首领条
+  if(bossRef && bossRef.hp>0 && bossRef.awake){
+    const bw=Math.min(600,VW*.52), bx=VW/2-bw/2;
+    K.panel(bx-16, 12, bw+32, 70, {alpha:0.94});
+    K.text('👹 ' + (bossRef.voxName||'深渊徘徊者'), VW/2, 31, 16, C.gold, 'center');
+    K.bar(bx, 48, bw, 19, bossRef.hp/bossRef.maxhp, {col:'#e23a32',hi:'#ff9270',lo:'#69131b',seg:12,value:`${Math.ceil(bossRef.hp)} / ${bossRef.maxhp}`,ts:12});
+  }
+  // 右上快捷入口与地图
+  drawReferenceMap(VW-294, 82, 276, 170);
+  drawRefButton({x:VW-260,y:42,r:24},'包','#ffd06a',false);
+  drawRefButton({x:VW-192,y:42,r:24},'任','#ffd06a',false);
+  drawRefButton({x:VW-124,y:42,r:24},'设','#ffd06a',false);
+  // 底部目标进度
+  K.text('探索地牢，找到下一层的入口',VW/2,VH-39,13,'#d2c4ad','center');
+  K.bar(VW/2-180,VH-25,360,8,p.xp/xpNeed(p.lvl),{col:'#a94cff',hi:'#e0a4ff',lo:'#2b153f',seg:8});
+  drawReferenceMobileControls();
+}
+function drawReferenceMobileControls(){
+  const L=touchLayout();
+  ctx.save(); ctx.globalAlpha=.72; ctx.fillStyle='rgba(8,10,23,.55)'; ctx.strokeStyle='rgba(190,210,240,.55)'; ctx.lineWidth=3;
+  ctx.beginPath(); ctx.arc(L.move.x,L.move.y,L.move.r,0,Math.PI*2); ctx.fill(); ctx.stroke();
+  ctx.globalAlpha=.88; ctx.fillStyle='rgba(174,183,211,.5)'; ctx.beginPath(); ctx.arc(L.move.x+touch.moveX*48,L.move.y+touch.moveY*48,34,0,Math.PI*2); ctx.fill();
+  ctx.restore();
+  drawRefButton(L.attack,'⚔','#ffb347',touch.attackId!==null,'普通攻击');
+  drawRefButton(L.potion,'🧪','#ff6e86',touch.potionId!==null,'');
+  drawRefButton(L.skill,'✦','#a879ff',touch.skillId!==null,'技能');
+  drawRefButton(L.roll,'翻','#d9e1ef',touch.rollId!==null,'翻滚');
+  drawRefButton(L.bow,'☾','#a879ff',touch.bowId!==null,'终极技');
+  drawRefButton(L.run,'↗','#8ee6ff',touch.runId!==null,'');
+  drawRefButton(L.map,'图','#8dd8ff',false,'');
+  drawRefButton(L.bag,'包','#ffd06a',false,'');
+}
+function drawArtGrade(){
+  // 最终美术合成：压住四角、保留角色与火把中心亮度，并加一层极轻的冷暖电影色调。
+  const cx=VW*.48, cy=VH*.42, outer=Math.max(VW,VH)*.78;
+  ctx.save();
+  const vg=ctx.createRadialGradient(cx,cy,Math.min(VW,VH)*.18,cx,cy,outer);
+  vg.addColorStop(0,'rgba(0,0,0,0)'); vg.addColorStop(.62,'rgba(2,4,12,.035)'); vg.addColorStop(1,'rgba(0,2,10,.42)');
+  ctx.fillStyle=vg; ctx.fillRect(0,0,VW,VH);
+  ctx.globalCompositeOperation='soft-light';
+  const tint=ctx.createLinearGradient(0,0,0,VH); tint.addColorStop(0,'rgba(46,68,120,.16)'); tint.addColorStop(.48,'rgba(20,24,50,.02)'); tint.addColorStop(1,'rgba(120,52,30,.12)');
+  ctx.fillStyle=tint; ctx.fillRect(0,0,VW,VH);
+  ctx.globalCompositeOperation='source-over';
+  ctx.strokeStyle='rgba(255,220,150,.08)'; ctx.lineWidth=1; ctx.strokeRect(2,2,VW-4,VH-4);
+  ctx.restore();
+}
+function drawHUD(){
+  if(touchUIEnabled()) drawReferenceMobileHUD(); else drawReferenceDesktopHUD();
+}
+function drawTouchButton(b, label, col, active=false){
+  ctx.save();
+  ctx.globalAlpha = active ? 0.9 : 0.7;
+  ctx.fillStyle = active ? 'rgba(100,150,210,.42)' : 'rgba(7,10,22,.62)';
+  ctx.strokeStyle = col; ctx.lineWidth = active ? 3 : 2;
+  ctx.beginPath(); ctx.arc(b.x,b.y,b.r,0,Math.PI*2); ctx.fill(); ctx.stroke();
+  ctx.fillStyle = '#fff'; ctx.font = `700 ${b.r>34?18:14}px "Microsoft YaHei",sans-serif`;
+  ctx.textAlign='center'; ctx.textBaseline='middle'; ctx.fillText(label,b.x,b.y+1);
+  ctx.restore();
+}
+function drawTouchHUD(){
+  const L = touchLayout();
+  ctx.save();
+  ctx.globalAlpha = 0.5; ctx.fillStyle='rgba(7,10,22,.55)'; ctx.strokeStyle='rgba(180,220,255,.75)'; ctx.lineWidth=2;
+  ctx.beginPath(); ctx.arc(L.move.x,L.move.y,L.move.r,0,Math.PI*2); ctx.fill(); ctx.stroke();
+  const kx=L.move.x+touch.moveX*34, ky=L.move.y+touch.moveY*34;
+  ctx.globalAlpha=0.82; ctx.fillStyle='rgba(130,190,245,.48)'; ctx.beginPath(); ctx.arc(kx,ky,25,0,Math.PI*2); ctx.fill();
+  ctx.globalAlpha=0.52; ctx.fillStyle='rgba(7,10,22,.55)'; ctx.strokeStyle='rgba(180,220,255,.75)';
+  ctx.beginPath(); ctx.arc(L.aim.x,L.aim.y,L.aim.r,0,Math.PI*2); ctx.fill(); ctx.stroke();
+  ctx.restore();
+  drawTouchButton(L.aim,'瞄准','#93cfff',touch.aimId!==null);
+  drawTouchButton(L.attack,'⚔','#ff766b',touch.attackId!==null);
+  drawTouchButton(L.roll,'翻','#a9ddff',touch.rollId!==null);
+  drawTouchButton(L.bow,'弓','#ffd278',touch.bowId!==null);
+  drawTouchButton(L.skill,'技','#c69aff',touch.skillId!==null);
+  drawTouchButton(L.potion,'药','#ff8cad',touch.potionId!==null);
+  drawTouchButton(L.run,'跑','#8dffb0',touch.runId!==null);
+  drawTouchButton(L.map,'图','#8dd8ff',false);
+  drawTouchButton(L.bag,'包','#ffe28a',false);
 }
 // =====================================================================
 //  标题流程：主菜单（营火夜景） → 英雄选择 → 职业选择 → 装备确认
@@ -5069,7 +5462,7 @@ function drawLoadout(t){
 // ---------- 浮层：设置 / 操作说明 ----------
 function drawTitleOverlay(){
   ctx.fillStyle = 'rgba(0,0,0,.6)'; ctx.fillRect(0,0,VW,VH);
-  const w = TS.overlay==='help' ? 640 : 460, h = TS.overlay==='help' ? 420 : 340, x = VW/2 - w/2, y = VH/2 - h/2;
+  const w = TS.overlay==='help' ? 640 : 460, h = TS.overlay==='help' ? 420 : 380, x = VW/2 - w/2, y = VH/2 - h/2;
   glassPanel(x, y, w, h, {a:0.92, edge:'#ffd860'});
   titleRects.push({x:0, y:0, w:VW, h:VH, kind:'ovbg'});
   titleRects.push({x, y, w, h, kind:'ovpanel'});
@@ -5094,7 +5487,12 @@ function drawTitleOverlay(){
     ctx.fillStyle = rawSkin ? '#ffd860' : '#8a86a8'; ctx.beginPath(); ctx.arc(rawSkin ? tx3 + 50 : tx3 + 14, ty3 + 13, 9, 0, 7); ctx.fill();
     txt(rawSkin ? '隐藏装备外观' : '显示头盔/胸甲/靴子', tx3 + 80, ty3 + 13, 13, '#ddd');
     titleRects.push({x:tx3, y:ty3, w:64, h:26, kind:'raw'});
-    txt('游戏中：N 静音 · [ ] 调音量 · O 原皮', x + 24, y + h - 26, 11, '#8a86a8');
+    txt('显示头盔', x + 24, y + 302, 14, '#ddd');
+    const tx4 = x + 120, ty4 = y + 290, hon = !hideVis.helm; glassPanel(tx4, ty4, 64, 26, {a:0.6, edge: hon ? '#7affaa' : '#8a86a8', r:13});
+    ctx.fillStyle = hon ? '#7affaa' : '#8a86a8'; ctx.beginPath(); ctx.arc(hon ? tx4 + 50 : tx4 + 14, ty4 + 13, 9, 0, 7); ctx.fill();
+    txt(hon ? '显示' : '隐藏（游戏中 Shift+O）', tx4 + 80, ty4 + 13, 13, '#ddd');
+    titleRects.push({x:tx4, y:ty4, w:64, h:26, kind:'helmvis'});
+    txt('游戏中：N 静音 · [ ] 调音量 · O 原皮 · Shift+O 头盔', x + 24, y + h - 26, 11, '#8a86a8');
   } else {
     txt('操作说明', x + 24, y + 34, 22, '#ffe08a', 'left', '"Microsoft YaHei",sans-serif');
     const L = [['移动','WASD'],['连击','鼠标左键'],['射箭（蓄力）','鼠标右键'],['魔法','R / 鼠标中键'],['翻滚 / 奔跑','Shift（按住奔跑）'],['冲刺斩','翻滚中按左键'],['跳跃','空格'],['职业技能','Q'],['神器','1 2 3'],['法师技能','4 5 6'],['药水','E'],['拾取','F'],['背包 / 地图','I / M'],['换武器组','X'],['显示掉落','Alt'],['缩放','滚轮 / - =']];
@@ -5157,9 +5555,10 @@ function titleMenuPick(k){
 function titleClick(mxu, myu){
   if(TS.overlay){
     const ov = titleRects.filter(r=>mxu>=r.x && mxu<=r.x+r.w && myu>=r.y && myu<=r.y+r.h);
-    const top = ov.find(r=>r.kind==='vol' || r.kind==='mute' || r.kind==='raw');
+    const top = ov.find(r=>r.kind==='vol' || r.kind==='mute' || r.kind==='raw' || r.kind==='helmvis');
     if(top && top.kind==='vol' && window.SFX){ SFX[top.fn]((mxu - top.bx)/top.bw); if(SFX.muted) SFX.toggle(); SFX.lib.click(); }
     else if(top && top.kind==='mute' && window.SFX){ SFX.toggle(); }
+    else if(top && top.kind==='helmvis'){ toggleHideVis('helm'); if(window.SFX) SFX.lib.click(); }
     else if(top && top.kind==='raw'){ setRawSkin(!rawSkin); if(window.SFX) SFX.lib.click(); }
     else if(!ov.some(r=>r.kind==='ovpanel')) TS.overlay = null;
     return;
@@ -5233,6 +5632,7 @@ function loop(now){
   ensureSize();
   const frame = Math.min(0.1, (now-last)/1000); last = now;
   fps = fps*0.95 + (1/Math.max(frame,1e-3))*0.05;
+  if(touchUIEnabled() && state==='play') touchAimScreen();
   if(state==='title'){ if(window.World3D) World3D.hide(); withUI(drawTitle); drawCursor(); requestAnimationFrame(loop); return; }
   slowT -= frame;
   timeScale = slowT>0 ? 0.35 : 1;
@@ -5252,7 +5652,7 @@ function loop(now){
   withZoom(drawReticle);
   if(state==='upgrade') withUI(drawUpgrade);
   if(state==='dead') withUI(drawDead);
-  if(state==='pause'){ ctx.fillStyle='rgba(0,0,0,.6)'; ctx.fillRect(0,0,VW,VH); txt('暂停', VW/2, VH/2-20, 48, '#fff', 'center'); txt('按 Esc 继续', VW/2, VH/2+30, 16, '#ccc', 'center'); }
+  if(state==='pause'){ ctx.fillStyle='rgba(0,0,0,.6)'; ctx.fillRect(0,0,VW,VH); txt('暂停', VW/2, VH/2-20, 48, '#fff', 'center'); txt(touchUIEnabled() ? '点击屏幕继续' : '按 Esc 继续', VW/2, VH/2+30, 16, '#ccc', 'center'); }
   drawCursor();
   requestAnimationFrame(loop);
 }

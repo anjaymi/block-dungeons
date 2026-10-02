@@ -75,8 +75,8 @@ function fogTex(rgb){
 }
 
 // ---------------- 状态 ----------------
-// 烟尘强度（整体弱化：雾 45%、灰尘 60%）
-const FOG_K = 0.45, DUST_K = 0.6, DUST_N = 0.7;
+// 氛围强度：让参考图里的深色空间、漂浮尘粒和主题雾真正参与画面，而不是只剩一层滤镜。
+const FOG_K = 0.58, DUST_K = 0.72, DUST_N = 0.82;
 let builtFor = null, cfg = null, parts = [], shafts = [], glints = [], splashes = [], fogPat = null, fogCan = null;
 const rnd = (a,b) => a + Math.random()*(b-a);
 function viewBounds(){
