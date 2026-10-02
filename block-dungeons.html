@@ -934,6 +934,10 @@ const HELM_STY = {
   dragon:(o,c1,c2)=>{ for(const s of [1,-1]){ o([-1.4,s*4.2,HELM_TOP+0.8],[2.4,1.6,1.6],c1); o([-3,s*4.6,HELM_TOP+1.6],[2,1.2,1.2],c1); o([-4.4,s*4.8,HELM_TOP+2.4],[1.4,0.8,0.8],c2); } o([5.6,0,HELM_TOP-1.6],[0.5,1.2,1.2],c2,1); },
   halo:(o,c1,c2,t)=>{ const z = HELM_TOP+3+Math.sin(t*2)*0.5; o([0,0,z],[8,1,0.6],c2,1); o([0,4,z],[1,8,0.6],c2,1); o([0,-4,z],[1,8,0.6],c2,1); o([4,0,z],[1,7,0.6],c2,1); o([-4,0,z],[1,7,0.6],c2,1); },
   goggles:(o,c1,c2)=>{ o([0.6,0,HELM_TOP-1],[10.8,12,1.2],'#3a2a1a'); for(const s of [1,-1]){ o([5.6,s*2.4,HELM_TOP-0.8],[1,2.6,2.2],c1); o([6.1,s*2.4,HELM_TOP-0.8],[0.3,1.8,1.4],'#9ae8ff',1); } },
+  leatherband:(o,c1,c2)=>{ o([0.2,0,HELM_TOP-2.2],[10.6,10.8,1.4],c1); o([5,0,HELM_TOP-2.2],[0.6,2,1.6],c2); for(const s of [1,-1]) o([-4,s*5.3,HELM_TOP-3],[2,0.6,3],c1); },
+  nasal:(o,c1,c2)=>{ o([0,0,HELM_TOP-0.8],[11,11,3],c1); o([0,0,HELM_TOP+0.9],[3,3,1.2],c1); o([5.6,0,3.4],[0.7,1.4,4],c1); o([5.5,0,HELM_TOP-2.2],[0.6,11,0.8],c2); },
+  gh_horns:(o,c1,c2,t)=>{ HELM_STY.greathelm(o,c1,c2,t); for(const s of [1,-1]){ o([0,s*6.8,HELM_TOP-0.4],[3,2.4,3],c2); o([-0.4,s*8.6,HELM_TOP+1],[2.6,2.4,2.6],'#e8e0cc'); o([-1,s*9.8,HELM_TOP+3],[2,2,2.6],'#e8e0cc'); o([-1.6,s*10.2,HELM_TOP+5.2],[1.4,1.4,2.2],'#e8e0cc'); } },
+  gh_wings:(o,c1,c2,t)=>{ HELM_STY.greathelm(o,c1,c2,t); for(const s of [1,-1]){ o([-0.5,s*6.4,HELM_TOP-0.6],[4.6,1,3],c1); o([-2.4,s*7.8,HELM_TOP+1.4],[4.4,1,3.4],c1); o([-4.2,s*9.2,HELM_TOP+3.6],[3.6,1,3.4],c1); o([-5.6,s*10.4,HELM_TOP+5.6],[2.4,1,2.6],c2); } },
   cap:(o,c1,c2)=>{ o([-0.4,0,HELM_TOP-0.6],[10.4,10.6,2.6],c1); o([4.8,0,HELM_TOP-1.6],[0.8,10.6,0.8],c2); },
   chainhood:(o,c1,c2)=>{ o([-0.6,0,HELM_TOP-1],[10.8,11.2,3.2],c1); for(const s of [1,-1]) o([-0.6,s*5.4,4.6],[10.4,0.8,7],c1); o([-5.2,0,4.6],[0.8,11,7],c1); o([5.1,0,HELM_TOP-2.2],[0.6,11,0.8],c2); },
   greathelm:(o,c1,c2)=>{ o([0,0,HELM_TOP-1.2],[11.4,11.4,3.6],c1); for(const s of [1,-1]) o([0,s*5.6,3.6],[11,0.8,8],c1); o([-5.6,0,3.6],[0.8,11,8],c1); o([5.6,0,1.6],[0.8,11,4],c1); o([5.9,0,4.6],[0.4,9,0.6],'#151515'); o([0,0,HELM_TOP+0.9],[7,1,1.4],c2); },
@@ -948,11 +952,13 @@ function eyeRect(k){ const [x,y,w] = DOLL[k]; return [x + w*CELL - 17, y + 2, 15
 function setRawSkin(v){ rawSkin = !!v; localStorage.setItem('bd_rawskin', rawSkin ? '1' : '0'); if(typeof player !== 'undefined' && player) recalc(); }
 const TIER_MAT = ['#7a5232', '#8e959e', '#c9ced8'];           // 皮 / 链 / 板
 const Q_ACC = {normal:'#5a4a3a', magic:'#5a7aff', rare:'#f0d040', unique:'#ffb040', set:'#40e070', runeword:'#e0c890'};
-const TIER_HELM = ['cap', 'chainhood', 'greathelm'];
+const TIER_HELM = [['cap','hood','leatherband'], ['chainhood','visor','nasal'], ['greathelm','gh_horns','gh_wings']];
+const HELM_VN = {cap:'皮帽', hood:'兜帽', leatherband:'皮额带', chainhood:'链甲兜帽', visor:'面甲盔', nasal:'护鼻盔', greathelm:'全盔', gh_horns:'角盔', gh_wings:'翼盔'};
 function baseVis(it, k){
   if(!it || !['helm','armor','boots'].includes(k)) return null;
   const t = Math.max(0, Math.min(2, it.tier|0)), c1 = TIER_MAT[t], c2 = Q_ACC[it.q] || Q_ACC.normal;
-  return {c1, c2, helm: TIER_HELM[t], tier: t, base: true};
+  const v = ((it.vs ?? it.uid ?? 0) % 3 + 3) % 3, hi = it.q==='rare' || it.q==='runeword';
+  return {c1, c2, helm: TIER_HELM[t][v], tier: t, v, base: true, gem: hi};
 }
 function gearVis(p){
   const g = {}; if(!p.eq) return g;
@@ -965,13 +971,16 @@ function gearVis(p){
 }
 function gearOverlay(md, Bn, g, out){
   const t = performance.now()/1000;
-  if(g.helm && !(g.helm.helm==='witch' && md.byName.s_hat!==undefined)){ const H = mul(Bn('head'), [0.8,0,0, 0,0.8,0, 0,0,0.8, 0,0,-0.4]); const st = HELM_STY[g.helm.helm] || HELM_STY.circlet; st((c,s2,col,gl)=>out.push(BX(H,c,s2,col,gl)), g.helm.c1, g.helm.c2, t); }
+  if(g.helm && !(g.helm.helm==='witch' && md.byName.s_hat!==undefined)){ const H = mul(Bn('head'), [0.8,0,0, 0,0.8,0, 0,0,0.8, 0,0,-0.4]); const st = HELM_STY[g.helm.helm] || HELM_STY.circlet; st((c,s2,col,gl)=>out.push(BX(H,c,s2,col,gl)), g.helm.c1, g.helm.c2, t); if(g.helm.gem) out.push(BX(H,[6.1,0,HELM_TOP-1.4],[0.5,1.4,1.4],g.helm.c2,true)); }
   if(g.armor){ for(const sd of [1,-1]){ const A = Bn(sd>0?'arm_r':'arm_l'); out.push(BX(A,[0,0,1.7],[4.8,4.2,1.4],g.armor.c1), BX(A,[0,0,2.5],[4.2,3.6,0.5],g.armor.c2)); }
     const B = Bn('body'); out.push(BX(B,[2.35,0,9],[0.4,2.4,2.4],g.armor.c1), BX(B,[2.55,0,9],[0.3,1.1,1.1],g.armor.c2,true));
     if(g.armor.base){ const T = g.armor.tier; out.push(BX(B,[0,0,7.4],[5.4,9.4,T>0?8:6.6],g.armor.c1), BX(B,[0,0,3.6],[5.6,9.6,0.8],g.armor.c2)); for(const sd of [1,-1]){ const A = Bn(sd>0?'arm_r':'arm_l'); out.push(BX(A,[0,0,2.2],[5.4+T*0.4,4.8+T*0.4,2.4+T*0.6],g.armor.c1), BX(A,[0,0,3.6+T*0.3],[5+T*0.4,4.4+T*0.4,0.5],g.armor.c2)); }
+      if(g.armor.v===1){ out.push(BX(B,[2.5,1.5,7.4],[0.4,1.2,8.4],g.armor.c2), BX(B,[-2.5,-1.5,7.4],[0.4,1.2,8.4],g.armor.c2)); }
+      if(g.armor.v===2){ out.push(BX(B,[-2.7,0,6.6],[0.6,7.6,9.6],g.armor.c2)); }
+      if(g.armor.gem) out.push(BX(B,[2.8,0,9.4],[0.4,1.6,1.6],g.armor.c2,true));
       if(T===2){ out.push(BX(B,[2.45,0,8.2],[0.3,1,5],g.armor.c2)); for(const sd of [1,-1]){ const A = Bn(sd>0?'arm_r':'arm_l'); out.push(BX(A,[0,0,3.2],[5.2,4.6,1.2],g.armor.c1)); } } } }
   if(g.gloves){ for(const sd of [1,-1]){ const A = Bn(sd>0?'arm_r':'arm_l'); out.push(BX(A,[0,0,-8.7],[4.7,3.9,2.6],g.gloves.c1), BX(A,[0,0,-7.3],[4.9,4.1,0.5],g.gloves.c2)); } }
-  if(g.boots){ for(const sd of [1,-1]){ const L2 = Bn(sd>0?'leg_r':'leg_l'); out.push(BX(L2,[0.2,0,-10.3],[4.9,4.7,3.6],g.boots.c1), BX(L2,[0.2,0,-8.4],[5.1,4.9,0.5],g.boots.c2)); } }
+  if(g.boots){ for(const sd of [1,-1]){ const L2 = Bn(sd>0?'leg_r':'leg_l'); out.push(BX(L2,[0.2,0,-10.3],[4.9,4.7,3.6],g.boots.c1), BX(L2,[0.2,0,-8.4],[5.1,4.9,0.5],g.boots.c2)); if(g.boots.base && g.boots.v===1) out.push(BX(L2,[0.2,0,-7.2],[5,4.8,2],g.boots.c1), BX(L2,[0.2,0,-6.1],[5.2,5,0.5],g.boots.c2)); if(g.boots.base && g.boots.v===2) out.push(BX(L2,[2.6,0,-11.2],[1.4,4.4,1.8],g.boots.c2)); } }
   if(g.belt){ const B = Bn('body'); out.push(BX(B,[0,0,2.2],[4.9,8.9,1.2],g.belt.c1), BX(B,[2.5,0,2.2],[0.3,1.8,1.3],g.belt.c2)); }
   if(g.shield){ const A = Bn('arm_l'); out.push(BX(A,[0,-2.1,-5.5],[6,0.9,7],g.shield.c1), BX(A,[0,-2.6,-5.5],[3.4,0.4,4],g.shield.c2)); }
 }
@@ -1705,7 +1714,7 @@ let itemUid = 1;
 const rollR = r => Array.isArray(r) ? ri(r[0], r[1]) : r;
 function baseOf(type){ return type==='weapon' ? null : ABASE[type]; }
 function newBase(type, tier, kind){
-  const it = {uid:itemUid++, type, tier, q:'normal', ident:true, affixes:[], st:{}, socks:[], sock:0, maxSock:0, eth:false, ilvl:1, reqLvl:TIER_REQLVL[tier]};
+  const it = {uid:itemUid++, vs:(Math.random()*1e6)|0, type, tier, q:'normal', ident:true, affixes:[], st:{}, socks:[], sock:0, maxSock:0, eth:false, ilvl:1, reqLvl:TIER_REQLVL[tier]};
   if(type==='weapon'){
     const B = WBASE[kind]; it.kind = kind; it.bname = B.names[tier]; it.w = B.w; it.h = B.h; it.ico = B.ico;
     it.dmg = [Math.max(1,Math.round(WDMG[tier][0]*B.k)), Math.max(2,Math.round(WDMG[tier][1]*B.k))];
