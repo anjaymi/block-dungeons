@@ -948,6 +948,15 @@ let rawSkin = localStorage.getItem('bd_rawskin') === '1';
 let hideVis = (()=>{ try{ return JSON.parse(localStorage.getItem('bd_hidevis')) || {}; }catch(e){ return {}; } })();
 const VIS_SLOTS = ['helm','armor','boots'];
 function toggleHideVis(k){ hideVis[k] = !hideVis[k]; localStorage.setItem('bd_hidevis', JSON.stringify(hideVis)); if(player) recalc(); }
+const lsJ = (k, d) => { try{ return JSON.parse(localStorage.getItem(k)) || d; }catch(e){ return d; } };
+let visBook = lsJ('bd_visbook', {helm:[], armor:[], boots:[]}), tmog = lsJ('bd_tmog', {});
+function saveVis(){ localStorage.setItem('bd_visbook', JSON.stringify(visBook)); localStorage.setItem('bd_tmog', JSON.stringify(tmog)); }
+function unlockVis(it, k){ const b = baseVis(it, k); if(!b) return; const key = b.tier + '-' + b.v; visBook[k] = visBook[k] || [];
+  if(!visBook[k].includes(key)){ visBook[k].push(key); visBook[k].sort(); saveVis(); if(player && state!=='title') addText(player.x, player.y, 2, '收录外观：' + visName(k, b.tier, b.v), '#d8b8ff', 1.2); } }
+const ARM_VN = [['皮甲','斜挎皮甲','护背皮甲'],['链甲','斜挎链甲','护背链甲'],['板甲','斜挎板甲','护背板甲']], BOOT_VN = ['短靴','高筒靴','护趾靴'];
+function visName(k, t, v){ return k==='helm' ? HELM_VN[TIER_HELM[t][v]] : k==='armor' ? ARM_VN[t][v] : BOOT_VN[v]; }
+function cycleTmog(k, dir){ const list = [null].concat(visBook[k] || []), i = list.indexOf(tmog[k] || null); tmog[k] = list[(i + (dir||1) + list.length) % list.length]; if(!tmog[k]) delete tmog[k]; saveVis(); if(player) recalc(); }
+function tmogRect(k){ const [x,y,w] = DOLL[k]; return [x + w*CELL - 34, y + 2, 15, 12]; }
 function eyeRect(k){ const [x,y,w] = DOLL[k]; return [x + w*CELL - 17, y + 2, 15, 12]; }
 function setRawSkin(v){ rawSkin = !!v; localStorage.setItem('bd_rawskin', rawSkin ? '1' : '0'); if(typeof player !== 'undefined' && player) recalc(); }
 const TIER_MAT = ['#7a5232', '#8e959e', '#c9ced8'];           // 皮 / 链 / 板
@@ -964,7 +973,9 @@ function gearVis(p){
   const g = {}; if(!p.eq) return g;
   const vis = it => { if(!it || !it.ident) return null; if(it.q==='set' && SETS[it.set] && SETS[it.set].vis) return SETS[it.set].vis; if(it.q==='unique') return {c1:'#c8a050', c2:'#ffe08a', helm:'circlet'}; return null; };
   if(rawSkin) return g;
-  for(const k of ['helm','armor','gloves','boots','belt']){ if(hideVis[k]) continue; const v = vis(p.eq[k]) || baseVis(p.eq[k], k); if(v) g[k] = v; }
+  for(const k of ['helm','armor','gloves','boots','belt']){ if(hideVis[k]) continue; let v = vis(p.eq[k]) || baseVis(p.eq[k], k);
+    if(v && tmog[k] && VIS_SLOTS.includes(k)){ const [tt, vv] = tmog[k].split('-').map(Number); v = {c1: TIER_MAT[tt], c2: v.c2 || Q_ACC.normal, helm: TIER_HELM[tt][vv], tier: tt, v: vv, base: true, gem: !!v.gem, aura: v.aura}; }
+    if(v) g[k] = v; }
   const sh = p.eq.offhand; if(sh && sh.type==='shield') g.shield = vis(sh) || {c1:sh.q==='rare'?'#c8b040':sh.q==='magic'?'#5a6ac8':'#8a6a3a', c2:'#c8c8d0'};
   for(const sid in SETS){ if(SETS[sid].vis && countSet(sid) >= SETS[sid].items.length){ g.aura = SETS[sid].vis.aura; g.auraSet = sid; } }
   return g;
@@ -1917,9 +1928,10 @@ function itemLines(it){
     if(window.WeaponModels){ const sid = WeaponModels.styleOf(it), S = WeaponModels.STYLES[sid], skin = WeaponModels.designName ? WeaponModels.designName(W.kind,sid) : S.name; L3.push([`外观：${S.name} · ${skin}（${TIER_N[it.tier||0]}，V 切换）`, S.accent]); }
   }
   { const bv = ['helm','armor','boots'].includes(it.type) && !(it.q==='set' || it.q==='unique') ? baseVis(it, it.type) : null;
-    if(bv){ const ARM_VN = [['皮甲','斜挎皮甲','护背皮甲'],['链甲','斜挎链甲','护背链甲'],['板甲','斜挎板甲','护背板甲']], BOOT_VN = ['短靴','高筒靴','护趾靴'];
+    if(bv){
       const nm = it.type==='helm' ? HELM_VN[bv.helm] : it.type==='armor' ? ARM_VN[bv.tier][bv.v] : BOOT_VN[bv.v];
-      L3.push([`外观：${nm}${bv.gem ? ' · 宝石' : ''}${(rawSkin || hideVis[it.type]) ? '（已隐藏）' : ''}`, '#d8b8ff']); } }
+      L3.push([`外观：${nm}${bv.gem ? ' · 宝石' : ''}${(rawSkin || hideVis[it.type]) ? '（已隐藏）' : ''}`, '#d8b8ff']);
+      if(tmog[it.type] && player && player.eq[it.type]===it){ const [tt,vv] = tmog[it.type].split('-').map(Number); L3.push([`幻化为：${visName(it.type,tt,vv)}`, '#ffb8f0']); } } }
   if(it.def!==undefined){ const d = itemDef(it,S); L3.push([`防御：${d}`, d!==it.def ? QCOL.magic : '#fff']); }
   if(it.block) L3.push([`格挡几率：${it.block + (S.block||0)}%`, '#fff']);
   const r = itemReq(it), G = player.G || {};
@@ -1965,6 +1977,7 @@ function recalc(){
   for(const sid in SETS){ const n = countSet(sid); for(const k in SETS[sid].bonus) if(n >= +k) add(SETS[sid].bonus[k]); }
   if(CHAR_INFO[p.char]) add(CHAR_INFO[p.char].perk);
   { const cp = classPerk(p); if(cp) add(cp); }
+  for(const k of VIS_SLOTS) if(p.eq[k]) unlockVis(p.eq[k], k);
   p.gv = gearVis(p);
   const A = p.attr, aa = T.allAttr||0;
   T.str = A.str + (T.str||0) + aa; T.dex = A.dex + (T.dex||0) + aa; T.vit = A.vit + (T.vit||0) + aa; T.ene = A.ene + (T.ene||0) + aa;
@@ -2141,6 +2154,7 @@ let uiHover = null, uiScale = 1, uiOX = 0, uiOY = 0, uiFlash = 0;
 function uiLocal(){ return [(mouse.x-uiOX)/uiScale, (mouse.y-uiOY)/uiScale]; }
 function uiHit(){
   const [mx, my] = uiLocal(), p = player;
+  for(const k of VIS_SLOTS){ if(!p.eq[k]) continue; const [tx,ty,tw,th] = tmogRect(k); if(mx>=tx-2 && mx<tx+tw+2 && my>=ty-2 && my<ty+th+2) return {kind:'tmog', slot:k}; }
   for(const k of VIS_SLOTS){ if(!p.eq[k]) continue; const [ex,ey,ew,eh] = eyeRect(k); if(mx>=ex-2 && mx<ex+ew+2 && my>=ey-2 && my<ey+eh+2) return {kind:'eye', slot:k}; }
   for(const k in DOLL){ const [x,y,w,h] = DOLL[k]; if(mx>=x && mx<x+w*CELL && my>=y && my<y+h*CELL) return {kind:'slot', slot:k}; }
   if(mx>=GRID0[0] && my>=GRID0[1] && mx<GRID0[0]+BAG_W*CELL && my<GRID0[1]+BAG_H*CELL) return {kind:'grid', cx:Math.floor((mx-GRID0[0])/CELL), cy:Math.floor((my-GRID0[1])/CELL)};
@@ -2195,6 +2209,7 @@ function bagClick(btn, shift, ctrl){
   if(h.kind==='junk' && btn===0){ salvageJunk(); return; }
   if(h.kind==='idall'){ let n = 0; const all = p.bag.map(b=>b.it).concat(EQ_SLOTS.map(k=>p.eq[k]).filter(Boolean)); for(const it of all) if(!it.ident && p.idScrolls>0){ identify(it); n++; } if(!n && p.idScrolls>0) msg('没有需要鉴定的物品'); recalc(); return; }
   if(h.kind==='sort'){ const its = p.bag.map(b=>b.it).sort((a,b)=>(b.w*b.h)-(a.w*a.h)); p.bag = []; for(const it of its) if(!addToBag(it)) dropItemAt(it,p.x,p.y); return; }
+  if(h.kind==='tmog'){ cycleTmog(h.slot, btn===2 ? -1 : 1); if(window.SFX) SFX.lib.click(); return; }
   if(h.kind==='eye'){ if(btn===0){ toggleHideVis(h.slot); if(window.SFX) SFX.lib.click(); } return; }
   if(h.kind==='transmute'){ transmute(); return; }
   if(h.kind==='cube'){ const t = p.cube[h.i]; p.cube[h.i] = p.cursor; p.cursor = t; return; }
@@ -2344,6 +2359,11 @@ function drawBag(){
       ctx.strokeStyle = hid ? '#777' : '#ffe08a'; ctx.lineWidth = 1.2; ctx.beginPath(); ctx.ellipse(ex+ew/2, ey+eh/2, 6, 3.6, 0, 0, 7); ctx.stroke();
       if(!hid){ ctx.fillStyle = '#ffe08a'; ctx.beginPath(); ctx.arc(ex+ew/2, ey+eh/2, 1.8, 0, 7); ctx.fill(); }
       else { ctx.strokeStyle = '#ff7a7a'; ctx.beginPath(); ctx.moveTo(ex+2, ey+eh-1); ctx.lineTo(ex+ew-2, ey+1); ctx.stroke(); }
+      { const [tx,ty,tw,th] = tmogRect(k), on = !!tmog[k], hv = uiHover && uiHover.kind==='tmog' && uiHover.slot===k;
+        ctx.fillStyle = hv ? 'rgba(255,184,240,.35)' : on ? 'rgba(120,40,110,.8)' : 'rgba(0,0,0,.55)'; ctx.fillRect(tx, ty, tw, th);
+        T('幻', tx+tw/2, ty+th/2+1, 10, on ? '#ffb8f0' : '#9a8aa8', 'center');
+        if(hv){ const n = (visBook[k]||[]).length, cur = tmog[k] ? visName(k, ...tmog[k].split('-').map(Number)) : '原装备外观';
+          T(`幻化：${cur}（已收录 ${n}）左键下一个 右键上一个`, tx+tw/2, ty-8, 11, '#ffb8f0', 'center'); } }
       if(eh2) T(rawSkin ? '原皮模式中（O 键）' : hideVis[k] ? '点击显示外观' : '点击隐藏外观', ex+ew/2, ey-8, 11, '#ffe08a', 'center'); }
     if(k==='offhand' && !it && p.eq.weapon && noOffhand(p.eq.weapon.kind)){ ctx.globalAlpha = 0.3; drawItemIcon(p.eq.weapon, x, y, w*CELL, h*CELL); ctx.globalAlpha = 1; }
   }
