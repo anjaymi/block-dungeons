@@ -1,0 +1,13 @@
+/*
+!/.gitignore
+!/README.md
+!/index.html
+!/block-dungeons.html
+!/scenefx.js
+!/ui-kit.js
+!/voxmobs.js
+!/weapon-models.js
+!/world3d.js
+!/vendor/
+/vendor/*
+!/vendor/voxel-world.js
