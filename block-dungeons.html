@@ -507,6 +507,56 @@ const ENCH = {
   m_meteor: {n:'陨落天火', d:'【法师】陨石范围 +20%，燃烧伤害 +50%', ico:'☄', max:3, cls:'mage'},
   m_blink:  {n:'相位大师', d:'【法师】闪现冷却 -1 秒，距离 +1', ico:'✨', max:2, cls:'mage'},
 };
+// 局内构筑原型：不新增资源，只用现有附魔组合改变战斗循环。
+const RESONANCE = {
+  fireCrit: {n:'灼裂', ico:'🔥✦', col:'#ffad62', keys:['fire','crit'], d:'燃烧目标被暴击时引发范围爆炸'},
+  arcaneArt:{n:'奥能过载', ico:'🔮⏳', col:'#c59cff', keys:['arcane','artcd'], d:'使用神器后，奥术命中会返还神器冷却'}
+};
+function resonanceEnabled(id){
+  if(!player || !RESONANCE[id]) return false;
+  return RESONANCE[id].keys.every(k => L(k)>0);
+}
+function resonanceProgress(id){
+  const R = RESONANCE[id]; return R ? R.keys.filter(k=>L(k)>0).length : 0;
+}
+function resonanceHintFor(k){
+  for(const id in RESONANCE){
+    const R = RESONANCE[id], idx = R.keys.indexOf(k);
+    if(idx<0) continue;
+    if(resonanceEnabled(id)) return `已激活 · ${R.d}`;
+    const other = R.keys[1-idx];
+    if(L(other)>0) return `将激活 ${R.n}：${R.d}`;
+  }
+  return '';
+}
+function setResToast(text, col){
+  if(!player) return;
+  player.resToast = text; player.resToastCol = col || '#fff'; player.resToastT = 1.5;
+}
+function armArcaneResonance(){
+  if(!resonanceEnabled('arcaneArt')) return;
+  player.arcaneArtReady = true; player.arcaneArtT = 4.5;
+  setResToast('奥能过载已充能', RESONANCE.arcaneArt.col);
+}
+function consumeArcaneResonance(m){
+  const p = player;
+  if(!resonanceEnabled('arcaneArt') || !p.arcaneArtReady) return false;
+  p.arcaneArtReady = false; p.arcaneArtT = 0;
+  for(let i=0;i<p.artCD.length;i++) p.artCD[i] = Math.max(0, p.artCD[i]-1.4);
+  addText(m.x,m.y,1.9*m.scale,'奥能过载','#d0a0ff',1.05);
+  rings.push({x:m.x,y:m.y,r:1.3,t:0,col:'190,140,255'});
+  glows.push({x:m.x,y:m.y,t:0,r:1.4});
+  bursts.push({x:m.x,y:m.y,z:0.7,a:0,t:0,rays:Array.from({length:8},()=>({a:rnd(0,6.28),l:rnd(.5,1.1),w:rnd(2,4)})),streak:0,cyan:true});
+  setResToast('奥能过载 · 神器冷却 -1.4s', RESONANCE.arcaneArt.col);
+  return true;
+}
+function triggerFireCrit(m, dmg){
+  if(!resonanceEnabled('fireCrit') || !m || m.hp<=0 || !(m.burn>0) || (m.resFireT||0)>0) return;
+  m.resFireT = 0.25;
+  addText(m.x,m.y,1.9*m.scale,'灼裂!','#ffb060',1.1);
+  setResToast('灼裂 · 范围爆炸', RESONANCE.fireCrit.col);
+  fireBoom(m.x,m.y,Math.max(2.5,dmg*0.18));
+}
 // 法师专属技能（4/5/6），按等级解锁
 const MAGE_SK = [
   {id:'missile', n:'奥术飞弹', ico:'✴', key:'4', cd:2.2, mana:18, lvl:1, col:'#c08aff', rgb:'190,140,255', d:'连发追踪奥术飞弹（基础 5 枚）'},
@@ -1104,6 +1154,7 @@ function newPlayer(){
     char:CHAR_ORDER[selC]||'akane', cls:CLASS_ORDER[selK]||'warrior', clsCD:0, holyT:0, weapon:'sword', st:'move', ph:'', pt:0, combo:-1, comboKeep:0, atkDef:null, atkAng:0, lungeV:0, hitSet:null, prevBlades:null,
     trail:[], buf:null, rollT:0, rollCD:0, rollDir:{x:1,y:0}, charge:0, potCD:0, stT:0, dodgedT:0, perfectT:0,
     arrows:20, ench:{}, emeralds:0, rig:null, speedFrac:0, z:0, vz:0, souls:0, artCD:[0,0,0], rageT:0, shotN:0, shotKeep:0, healT:0, mana:100, maxMana:100, spell:'fireball', spellCD:0, castDone:false,
+    arcaneArtReady:false, arcaneArtT:0, resToast:'', resToastCol:'#fff', resToastT:0,
     lvl:1, xp:0, pts:0, attr:{str:15, dex:15, vit:15, ene:10}, eq:{helm:null,amulet:null,weapon:null,armor:null,offhand:null,ring1:null,ring2:null,belt:null,gloves:null,boots:null}, alt:{weapon:null, offhand:null}, swapSet:0, bag:[], cube:[null,null,null,null], cursor:null, idScrolls:3, chillT:0,
     G:{str:15,dex:15,vit:15,ene:10,effIas:0,effFcr:0,effFrw:0,skills:0,wMin:4,wMax:8,mf:0,gf:0,defense:0,drDef:0,dr:0,block:0,resF:0,resC:0,resL:0,resP:0,light:0}};
 }
@@ -2845,6 +2896,7 @@ function useArtifact(i){
     for(let k=0;k<20;k++) addPart(p.x,p.y,rnd(0,1),rnd(-2,2),rnd(-2,2),rnd(1,3),pick(['#ff5a2a','#ffb02a']),0.6,5);
   }
   p.artCD[i] = A.cd*(1-0.25*L('artcd'));
+  armArcaneResonance();
 }
 function startCast(){
   const p = player, SP = SPELLS[p.spell];
@@ -3123,7 +3175,20 @@ function interact(){
 }
 function rollUpgrades(){
   const pool = Object.keys(ENCH).filter(k => L(k) < ENCH[k].max && (!ENCH[k].cls || ENCH[k].cls===player.cls)), out = [];
-  while(out.length<3 && pool.length) out.push(pool.splice(Math.floor(Math.random()*pool.length),1)[0]);
+  const addIf = k => { if(out.length<3 && pool.includes(k) && !out.includes(k)) out.push(k); };
+  // 已有一半构筑时，优先给出能完成共鸣的另一半；法师优先看见奥术/神器路线。
+  if(L('fire')>0) addIf('crit');
+  if(L('crit')>0) addIf('fire');
+  if(L('arcane')>0) addIf('artcd');
+  if(L('artcd')>0) addIf('arcane');
+  const score = k => {
+    let v = Math.random()*3;
+    if(player.cls==='mage' && (k==='arcane' || k==='artcd')) v += 1.2;
+    if(['fire','crit','arcane','artcd'].includes(k)) v += 0.35;
+    return v;
+  };
+  pool.sort((a,b)=>score(b)-score(a));
+  for(const k of pool) addIf(k);
   return out;
 }
 function reroll(){ if(player.emeralds>=25){ player.emeralds-=25; upgradeChoices = rollUpgrades(); } }
@@ -3282,7 +3347,7 @@ function bladeSegs(p, rig){
 
 function stepPlayer(dt){
   const p = player;
-  p.rollCD -= dt; p.potCD -= dt; p.inv -= dt; p.flash -= dt; p.comboKeep -= dt; p.perfectT -= dt; p.rageT -= dt; p.shotKeep -= dt; if(p.shotKeep<=0) p.shotN = 0; p.healT -= dt; p.spellCD -= dt; p.clsCD -= dt; p.holyT -= dt;
+  p.rollCD -= dt; p.potCD -= dt; p.inv -= dt; p.flash -= dt; p.comboKeep -= dt; p.perfectT -= dt; p.rageT -= dt; p.shotKeep -= dt; if(p.shotKeep<=0) p.shotN = 0; p.healT -= dt; p.spellCD -= dt; p.clsCD -= dt; p.holyT -= dt; p.arcaneArtT = Math.max(0, p.arcaneArtT-dt); p.resToastT = Math.max(0, p.resToastT-dt); if(p.arcaneArtT<=0) p.arcaneArtReady = false;
   p.mana = Math.min(p.maxMana, p.mana + dt*9*(1+0.25*L('arcane'))*(1+(p.G.mregen||0)/100)*(p.maxMana/100));
   if(p.G.regen) p.hp = Math.min(p.maxhp, p.hp + dt*p.G.regen);
   p.chillT -= dt;
@@ -3485,6 +3550,7 @@ function meleeHit(m, cx, cy){
     if(crit && p.mana !== undefined) p.mana = Math.min(p.maxMana||p.mana, p.mana + 1);
   }
   dmg = gearProcs(m, dmg);
+  if(crit) triggerFireCrit(m, dmg);
   const a = Math.atan2(m.y-p.y, m.x-p.x);
   const fin = p.combo === W.combo.length-1;
   damageMob(m, dmg, a, d.kb*(fin?1.4:1), d.kb, crit);
@@ -3719,7 +3785,7 @@ function mobWindupDur(m){
 let mobSlotN = 0;
 function stepMob(m, dt){
   const p = player;
-  m.t += dt; m.cd -= dt; m.flash -= dt; m.frozen -= dt; m.slamCD -= dt; m.waveCD -= dt; m.alertT = Math.max(0, (m.alertT||0)-dt); m.alertCd = Math.max(0, (m.alertCd||0)-dt);
+  m.t += dt; m.cd -= dt; m.flash -= dt; m.frozen -= dt; m.slamCD -= dt; m.waveCD -= dt; m.resFireT = Math.max(0, (m.resFireT||0)-dt); m.alertT = Math.max(0, (m.alertT||0)-dt); m.alertCd = Math.max(0, (m.alertCd||0)-dt);
   if(m.hp<=0) return;
   const d = dist(m,p), toP = Math.atan2(p.y-m.y, p.x-m.x), startX = m.x, startY = m.y;
   if(!m.awake && (m.type==='mimic' ? d<3.4 : (d<9 && los(m,p)))){ m.awake = true; m.alertT = 0.9; }
@@ -4296,7 +4362,7 @@ function simStep(dt){
             else sparks(s.x,s.y,0.6,s.ang,false);
             hitStop = Math.max(hitStop, s.big ? 0.045 : 0.03);
           }
-          if(s.arcane){ m.arcMark = performance.now()+4000; if(m.hp<=0) player.mana = Math.min(player.maxMana, player.mana+4); }
+          if(s.arcane){ m.arcMark = performance.now()+4000; consumeArcaneResonance(m); if(m.hp<=0) player.mana = Math.min(player.maxMana, player.mana+4); }
           if(L('freeze')) m.frozen = 2; if(Math.random()<0.15*L('thunder')) lightning(m);
           if(s.pierce>0) s.pierce--; else { s.life = 0; break; }
         }
@@ -5094,17 +5160,29 @@ function drawRefButton(b, label, col, active=false, sub=''){
   if(sub){ ctx.shadowBlur=0; ctx.fillStyle='#fff'; ctx.font='800 12px "Microsoft YaHei",sans-serif'; ctx.textAlign='center'; ctx.textBaseline='middle'; ctx.fillText(sub,b.x,b.y+b.r+16); }
   ctx.restore();
 }
+function drawResonanceHUD(x,y,w){
+  const p=player, K=UIK, ids=['fireCrit','arcaneArt'];
+  K.text('共鸣', x, y, 11, '#e2d5ff');
+  ids.forEach((id,i)=>{
+    const R=RESONANCE[id], active=resonanceEnabled(id), armed=id==='arcaneArt'&&p.arcaneArtReady;
+    const xx=x+42+i*Math.max(126,(w-42)/2), state=armed?'已充能':active?'已激活':`${resonanceProgress(id)}/2`;
+    K.text(`${R.ico} ${R.n}`,xx,y,11,active?R.col:'#8f8b9f');
+    K.text(state,xx,y+15,10,armed?'#fff0a0':active?R.col:'#777', 'left');
+  });
+  if(p.resToastT>0) K.text(p.resToast,x+w-4,y+15,10,p.resToastCol,'right');
+}
 function drawReferenceDesktopHUD(){
   const p = player, K = UIK, C = K.C, now = performance.now();
   drawShotPips();
   // 左上：层数、目标与资源
   K.bevel(16, 16, 58, 106, {inset:true});
   K.text(String(floorN), 45, 68, 38, '#fff', 'center');
-  K.panel(72, 16, 344, 106, {title:`第 ${floorN} 层 · ${theme.name}`, th:27, ts:16, alpha:0.92});
+  K.panel(72, 16, 344, 136, {title:`第 ${floorN} 层 · ${theme.name}`, th:27, ts:16, alpha:0.92});
   K.text('✦ 探索地牢，找到下一层的入口', 92, 68, 13, '#e7dfc8');
-  K.text(`◆ ${p.emeralds}`, 94, 101, 14, '#7affaa');
-  K.text(`⚿ ${stats.kills}`, 184, 101, 14, '#ffc850');
-  K.text(`${(CLASS_INFO[p.cls]||{}).ico||'✦'} ${(CLASS_INFO[p.cls]||{}).n||''} Lv.${p.lvl}`, 390, 101, 13, (CLASS_INFO[p.cls]||{}).col||'#c8b0ff', 'right');
+  drawResonanceHUD(92, 84, 300);
+  K.text(`◆ ${p.emeralds}`, 94, 126, 14, '#7affaa');
+  K.text(`⚿ ${stats.kills}`, 184, 126, 14, '#ffc850');
+  K.text(`${(CLASS_INFO[p.cls]||{}).ico||'✦'} ${(CLASS_INFO[p.cls]||{}).n||''} Lv.${p.lvl}`, 390, 126, 13, (CLASS_INFO[p.cls]||{}).col||'#c8b0ff', 'right');
   // 左侧竖栏：PC 这里展示肉鸽局内 Buff / 附魔，不再重复放战斗快捷键。
   const buffKeys=Object.keys(p.ench||{}).filter(k=>p.ench[k]>0 && ENCH[k]);
   const buffColor=k=>/^m_/.test(k)?'#8ed7ff':/fire|thunder|boom|power|crit|sharp|multi/.test(k)?'#ffb05c':/health|leech|potion|dodge|swift|soul/.test(k)?'#78e6a0':'#c59cff';
@@ -5162,9 +5240,10 @@ function drawReferenceMobileHUD(){
   K.bar(132, 26, 250, 21, p.hp/p.maxhp, {col:'#e43e42',hi:'#ff9b80',lo:'#67161c',value:`${Math.ceil(p.hp)} / ${p.maxhp}`,ts:12});
   K.bar(132, 57, 250, 17, p.mana/p.maxMana, {col:'#2c9eea',hi:'#8ee1ff',lo:'#123c74',value:`${Math.round(p.mana)} / ${p.maxMana}`,ts:11});
   K.text(`${(CLASS_INFO[p.cls]||{}).ico||'✦'} ${(CLASS_INFO[p.cls]||{}).n||''} Lv.${p.lvl}`, 132, 96, 13, (CLASS_INFO[p.cls]||{}).col||'#c8b0ff');
-  K.panel(18, 126, 360, 72, {alpha:0.9});
+  K.panel(18, 126, 360, 98, {alpha:0.9});
   K.text(`⌖ 第 ${floorN} 层 · ${theme.name}`, 38, 148, 15, '#ffe08a');
   K.text('🪙 ' + p.emeralds, 42, 180, 14, '#ffd75e'); K.text('⚿ ' + stats.kills, 132, 180, 14, '#ffc850'); K.text('✦ ' + Math.floor(p.souls), 220, 180, 14, '#bd91ff');
+  drawResonanceHUD(38, 202, 330);
   // 顶部首领条
   if(bossRef && bossRef.hp>0 && bossRef.awake){
     const bw=Math.min(600,VW*.52), bx=VW/2-bw/2;
@@ -5805,6 +5884,8 @@ function drawUpgrade(){
     ctx.font='bold 14px monospace'; let line='', ly = yy+216;
     for(const ch of E.d){ if(ctx.measureText(line+ch).width > cw-30){ txt(line, x+cw/2, ly, 14, '#ddd', 'center'); line=''; ly+=20; } line+=ch; }
     txt(line, x+cw/2, ly, 14, '#ddd', 'center');
+    const hint = resonanceHintFor(k);
+    if(hint) txt(`共鸣：${hint}`, x+cw/2, yy+chh-40, 11, /fire|crit/.test(k)?'#ffb060':'#c9a7ff', 'center');
     txt(`[${i+1}]`, x+cw/2, yy+chh-18, 13, '#888', 'center');
   });
   const ry = VH/2 + chh/2 + 70, can = player.emeralds>=25;
