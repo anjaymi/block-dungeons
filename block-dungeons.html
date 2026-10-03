@@ -1055,7 +1055,7 @@ function gearOverlay(md, Bn, g, out){
 const GW = 110, GH = 85;
 let G, edge, explored, flow, flowFrom = -1;
 let crates = [];
-let rooms, torches, mobs, items, chests, shots, parts, texts, bolts, booms, rings, waves = [], bombs = [], corpses = [], bursts = [], glows = [], streaks = [], clouds = [], pillars = [], zaps = [], exitPos, exitOpen, curTarget = null;
+let rooms, torches, mobs, items, chests, shots, parts, texts, bolts, booms, rings, waves = [], bombs = [], corpses = [], bursts = [], glows = [], streaks = [], clouds = [], pillars = [], zaps = [], mageFx = [], exitPos, exitOpen, curTarget = null;
 let player, cam = {x:0,y:0,kx:0,ky:0}, floorN = 1, theme, state = 'title', shake = 0, hitStop = 0, timeScale = 1, slowT = 0;
 let stats = {kills:0, emeralds:0, time:0};
 let upgradeChoices = [], banner = {txt:'', t:0}, hover = -1, debug = false;
@@ -1150,7 +1150,7 @@ function genLayout(nMain, nSide){
 }
 function genFloor(){
   G = new Uint8Array(GW*GH); explored = new Uint8Array(GW*GH); flow = new Int16Array(GW*GH); flowFrom = -1; roomId = new Int16Array(GW*GH).fill(-1);
-  rooms = []; torches = []; mobs = []; items = []; chests = []; shots = []; parts = []; texts = []; bolts = []; booms = []; rings = []; waves = []; bombs = []; corpses = []; clouds = []; bursts = []; glows = []; streaks = []; pillars = []; crates = []; zaps = [];
+  rooms = []; torches = []; mobs = []; items = []; chests = []; shots = []; parts = []; texts = []; bolts = []; booms = []; rings = []; waves = []; bombs = []; corpses = []; clouds = []; bursts = []; glows = []; streaks = []; pillars = []; crates = []; zaps = []; mageFx = [];
   theme = THEMES[(floorN-1) % THEMES.length]; bossRef = null; exitOpen = false; curRoom = null;
   const boss = floorN % 5 === 0, seed = ri(0, 9999);
   const nMain = boss ? 3 : 4 + Math.min(3, Math.floor(floorN/2)), nSide = boss ? 1 : (floorN===1 ? 2 : 3);
@@ -2860,11 +2860,12 @@ function releaseSpell(){
   if(p.spell==='fireball'){
     const sp = 15;
     shots.push({x:p.x+Math.cos(a)*0.5, y:p.y+Math.sin(a)*0.5, z:0.75+p.z, vx:Math.cos(a)*sp, vy:Math.sin(a)*sp, dmg:13*mul2, friendly:true, life:1.1, ang:a, pierce:0, hit:new Set(), fireball:true});
+    mageOrb(p.x+Math.cos(a)*0.5,p.y+Math.sin(a)*0.5,0.75+p.z,Math.cos(a)*4,Math.sin(a)*4,0,'#ffd060',0.36,0.18);
     p.mvx -= Math.cos(a)*1.5; p.mvy -= Math.sin(a)*1.5;
     for(let k=0;k<10;k++) addPart(p.x+Math.cos(a)*0.5,p.y+Math.sin(a)*0.5,0.75,Math.cos(a+rnd(-.6,.6))*rnd(2,5),Math.sin(a+rnd(-.6,.6))*rnd(2,5),rnd(0,1.5),pick(['#ff7a1a','#ffd060','#ff4010']),0.3,4,true);
   } else if(p.spell==='frost'){
     const R = 3.2;
-    rings.push({x:p.x,y:p.y,r:R,t:0,col:'150,225,255'}); rings.push({x:p.x,y:p.y,r:R*0.6,t:0.05,col:'230,250,255'});
+    rings.push({x:p.x,y:p.y,r:R,t:0,col:'150,225,255'}); rings.push({x:p.x,y:p.y,r:R*0.6,t:0.05,col:'230,250,255'}); mageRune(p.x,p.y,R,'150,225,255',0.9); mageRune(p.x,p.y,R*0.62,'230,250,255',0.65);
     bursts.push({x:p.x,y:p.y,z:0.5,a:0,t:0,rays:[],cyan:true});
     glows.push({x:p.x,y:p.y,t:0,r:2.4,frost:true});
     for(let k=0;k<40;k++){ const b = rnd(0,6.28), sp2 = rnd(4,9); addPart(p.x,p.y,rnd(0.1,0.6),Math.cos(b)*sp2,Math.sin(b)*sp2,rnd(0.5,2.5),pick(['#dff6ff','#9fe0ff','#ffffff','#6ac8ff']),rnd(0.3,0.5),rnd(2.5,4),true); }
@@ -2891,13 +2892,17 @@ function releaseSpell(){
       for(const m of mobs){ if(m.hp<=0 || seen.has(m)) continue; const d = dist(m,prev); if(d<bd && los(prev,m)){ bd = d; nx = m; } }
       cur = nx;
     }
-    zaps.push({pts, t:0.22}); shake = Math.max(shake, 5); hitStop = Math.max(hitStop, 0.04);
+    zaps.push({pts, t:0.22}); mageBeam(pts,'190,140,255',0.3); shake = Math.max(shake, 5); hitStop = Math.max(hitStop, 0.04);
   }
 }
 // =====================================================================
 //  法师技能组：奥术飞弹 / 法力护盾 / 陨石术
 // =====================================================================
 let meteors = [], burns = [];
+function pushMageFx(f){ if(mageFx.length<240) mageFx.push(f); }
+function mageOrb(x,y,z,vx,vy,vz,col,life=0.5,size=0.14){ pushMageFx({kind:'orb',x,y,z,vx,vy,vz,col,life,t:0,size,spin:rnd(-5,5)}); }
+function mageRune(x,y,r,col,life=0.65){ pushMageFx({kind:'rune',x,y,r,col,life,t:0,rot:rnd(0,6.28)}); }
+function mageBeam(pts,col,life=0.22){ if(pts && pts.length>1) pushMageFx({kind:'beam',pts:pts.map(q=>q.slice()),col,life,t:0,seed:rnd(0,6.28)}); }
 const mageLv = (i) => player.lvl >= MAGE_SK[i].lvl;
 function useMageSkill(i){
   const p = player, S = MAGE_SK[i];
@@ -2926,7 +2931,8 @@ function staffTip(p, fw=1.15, z=1.05){ return [p.x+Math.cos(p.ang)*fw, p.y+Math.
 function releaseMageSkill(){
   const p = player, mul2 = spellMul();
   { const S = MAGE_SK.find(S2=>S2.id===p.mSk), tp = staffTip(p, p.mSk==='meteor' ? 0.4 : 1.15, p.mSk==='meteor' ? 2.3 : 1.05);
-    rings.push({x:tp[0], y:tp[1], z:tp[2], r:1.0, t:0, col:S.rgb}); glows.push({x:tp[0], y:tp[1], t:0, r:1.2});
+    rings.push({x:tp[0], y:tp[1], z:tp[2], r:1.0, t:0, col:S.rgb}); glows.push({x:tp[0], y:tp[1], t:0, r:1.2}); mageRune(tp[0],tp[1],0.72,S.rgb,0.42);
+    for(let k=0;k<5;k++){ const b = k/5*6.28; mageOrb(tp[0],tp[1],tp[2],Math.cos(b)*rnd(1,2),Math.sin(b)*rnd(1,2),rnd(0.4,1.5),S.col,0.42,0.11); }
     for(let k=0;k<12;k++){ const b = rnd(0,6.28); addPart(tp[0],tp[1],tp[2],Math.cos(b)*rnd(2,5),Math.sin(b)*rnd(2,5),rnd(-1,2),S.col,0.35,3,true); }
     hitStop = Math.max(hitStop, 0.035); shake = Math.max(shake, 3); }
   if(p.mSk==='missile'){
@@ -2942,7 +2948,7 @@ function releaseMageSkill(){
     shake = Math.max(shake, 3);
   } else if(p.mSk==='meteor'){
     const T = p.mTarget, R = 2.3*(1+0.2*L('m_meteor'));
-    meteors.push({x:T.x, y:T.y, t:0, delay:0.8, R, dmg:30*mul2, burn:3.2*mul2*(1+0.5*L('m_meteor'))});
+    meteors.push({x:T.x, y:T.y, t:0, delay:0.8, R, dmg:30*mul2, burn:3.2*mul2*(1+0.5*L('m_meteor'))}); mageRune(T.x,T.y,R,'255,130,50',1.1);
     const tp = staffTip(p, 0.5, 2.2); for(let k=0;k<14;k++) addPart(tp[0],tp[1],tp[2],rnd(-1.5,1.5),rnd(-1.5,1.5),rnd(2,5),pick(['#ff8a3a','#ffd060','#ff4010']),0.5,4,true);
   }
 }
@@ -2985,7 +2991,7 @@ function mageStep(dt){
   if(p.mReady) for(let i=0;i<3;i++) p.mReady[i] = Math.max(0, p.mReady[i]-dt);
   if(p.mBuf){ p.mBuf.t -= dt; if(p.mBuf.t <= 0) p.mBuf = null; else if(p.st==='move' || (p.st==='atk' && p.ph==='rec')){ const bi = p.mBuf.i; p.mBuf = null; useMageSkill(bi); } }
   if(p.st==='mcast'){ p.mCastFx = (p.mCastFx||0) + dt; if(Math.random()<0.6){ const tp = staffTip(p, p.mSk==='meteor' ? 0.4 : 1.0, p.mSk==='meteor' ? 2.3 : 1.1); const col = MAGE_SK.find(S=>S.id===p.mSk).col;
-      const b = rnd(0,6.28); addPart(tp[0]+Math.cos(b)*0.6, tp[1]+Math.sin(b)*0.6, tp[2], -Math.cos(b)*2.5, -Math.sin(b)*2.5, 0, col, 0.3, 3, true); } } else p.mCastFx = 0;
+      const b = rnd(0,6.28); addPart(tp[0]+Math.cos(b)*0.6, tp[1]+Math.sin(b)*0.6, tp[2], -Math.cos(b)*2.5, -Math.sin(b)*2.5, 0, col, 0.3, 3, true); mageOrb(tp[0]+Math.cos(b)*0.42,tp[1]+Math.sin(b)*0.42,tp[2],-Math.cos(b)*1.2,-Math.sin(b)*1.2,0,col,0.3,0.08); } } else p.mCastFx = 0;
   if(p.mShieldT > 0){ p.mShieldT -= dt; if(p.mShieldT <= 0){ p.mShieldT = 0; rings.push({x:p.x,y:p.y,r:1.2,t:0,col:'122,200,255'}); } }
   if(p.mShieldHit > 0) p.mShieldHit -= dt;
   // 飞弹连发：杖头逐发射出，左右交替扇开，随后追踪
@@ -2994,6 +3000,7 @@ function mageStep(dt){
     while(p.mQ.left > 0 && p.mQ.t <= 0){
       const k = p.mQ.left--, side = (k%2 ? 1 : -1), base = p.mAim ? p.mAim.ang : p.ang, a = base + side*rnd(0.35,0.75), tp = staffTip(p), sp = 11;
       shots.push({x:tp[0], y:tp[1], sx:tp[0], sy:tp[1], z:tp[2], vx:Math.cos(a)*sp, vy:Math.sin(a)*sp, dmg:p.mQ.dmg, friendly:true, life:1.4, ang:a, pierce:0, hit:new Set(), arcane:true, homing:true, turn:7.5, col:'#c08aff'});
+      mageOrb(tp[0],tp[1],tp[2],Math.cos(a)*3.5,Math.sin(a)*3.5,0.2,'#c08aff',0.32,0.12);
       for(let q=0;q<4;q++) addPart(tp[0],tp[1],tp[2],rnd(-1,1)+Math.cos(a)*2,rnd(-1,1)+Math.sin(a)*2,rnd(0,1),pick(['#c08aff','#f0e0ff']),0.25,3,true);
       p.mQ.t += 0.07;
     }
@@ -3004,7 +3011,7 @@ function mageStep(dt){
     M.t += dt;
     if(!M.hit && M.t >= M.delay){
       M.hit = true;
-      booms.push({x:M.x,y:M.y,r:M.R,t:0}); rings.push({x:M.x,y:M.y,r:M.R,t:0,col:'255,150,60'}); rings.push({x:M.x,y:M.y,r:M.R*0.55,t:0.05,col:'255,230,160'});
+      booms.push({x:M.x,y:M.y,r:M.R,t:0}); rings.push({x:M.x,y:M.y,r:M.R,t:0,col:'255,150,60'}); rings.push({x:M.x,y:M.y,r:M.R*0.55,t:0.05,col:'255,230,160'}); mageRune(M.x,M.y,M.R,'255,150,60',0.55);
       glows.push({x:M.x,y:M.y,t:0,r:M.R*1.1,red:true}); pillars.push({x:M.x,y:M.y,t:0,h:2.6,life:0.6,beam:true});
       for(let k=0;k<46;k++){ const b = rnd(0,6.28), v = rnd(3,10); addPart(M.x,M.y,rnd(0.1,0.6),Math.cos(b)*v,Math.sin(b)*v,rnd(2,6),pick(['#ff7a1a','#ffd060','#ff4010','#5a4a40','#2a2220']),rnd(0.5,0.9),rnd(4,7)); }
       shake = Math.max(shake, 14); hitStop = Math.max(hitStop, 0.09); slowT = Math.max(slowT, 0.08);
@@ -3023,6 +3030,29 @@ function mageStep(dt){
       for(const m of mobs){ if(m.hp<=0) continue; if(Math.hypot(m.x-B.x, m.y-B.y) < B.r + m.r*0.5) damageMob(m, B.dmg*0.5, 0, 0, 0, false, true); } }
   }
   burns = burns.filter(B => B.t < B.life);
+}
+function drawMageFx(list){
+  for(const f of mageFx) list.push({k:(f.y===undefined ? (f.pts[0]?.[1]||0) : f.y)-0.85, f:()=>{
+    const u = clamp(f.t/Math.max(0.01,f.life),0,1), fade = Math.sin(Math.min(1,u)*Math.PI), rgb = f.col[0]==='#' ? hexRgb(f.col) : f.col;
+    ctx.save(); ctx.globalCompositeOperation = 'lighter';
+    if(f.kind==='orb'){
+      const q = P(f.x,f.y,f.z), tail = P(f.x-f.vx*0.11,f.y-f.vy*0.11,f.z-f.vz*0.05), r = Math.max(3,f.size*HW*(1+0.25*Math.sin(f.t*18)));
+      const tg = ctx.createLinearGradient(tail[0],tail[1],q[0],q[1]); tg.addColorStop(0,`rgba(${rgb},0)`); tg.addColorStop(1,`rgba(${rgb},${0.55*fade})`); ctx.strokeStyle=tg; ctx.lineWidth=r*0.9; ctx.lineCap='round'; ctx.beginPath(); ctx.moveTo(tail[0],tail[1]); ctx.lineTo(q[0],q[1]); ctx.stroke();
+      const g = ctx.createRadialGradient(q[0],q[1],0,q[0],q[1],r*3.2); g.addColorStop(0,`rgba(255,255,255,${0.95*fade})`); g.addColorStop(0.18,`rgba(${rgb},${0.95*fade})`); g.addColorStop(1,`rgba(${rgb},0)`); ctx.fillStyle=g; ctx.beginPath(); ctx.arc(q[0],q[1],r*3.2,0,7); ctx.fill();
+      ctx.fillStyle='#ffffff'; ctx.beginPath(); ctx.arc(q[0],q[1],r*0.48,0,7); ctx.fill();
+    } else if(f.kind==='rune'){
+      const q=P(f.x,f.y,0.04), rx=f.r*SX, ry=f.r*SY*0.52, rot=f.rot+f.t*1.8, al=0.8*fade;
+      ctx.translate(q[0],q[1]); ctx.rotate(rot*0.08); ctx.strokeStyle=`rgba(${rgb},${al})`; ctx.lineWidth=2.2; ctx.beginPath(); ctx.ellipse(0,0,rx,ry,0,0,7); ctx.stroke();
+      ctx.setLineDash([Math.max(4,rx*0.16),Math.max(3,rx*0.1)]); ctx.lineDashOffset=-f.t*60; ctx.strokeStyle=`rgba(235,250,255,${al*0.72})`; ctx.lineWidth=1.2; ctx.beginPath(); ctx.ellipse(0,0,rx*0.78,ry*0.78,0,0,7); ctx.stroke(); ctx.setLineDash([]);
+      for(let k=0;k<6;k++){ const a=k/6*6.283+rot, x=Math.cos(a)*rx*0.88, y=Math.sin(a)*ry*0.88; ctx.fillStyle=`rgba(255,255,255,${al})`; ctx.beginPath(); ctx.arc(x,y,Math.max(2,rx*0.035),0,7); ctx.fill(); }
+    } else if(f.kind==='beam'){
+      for(let pass=0;pass<2;pass++){
+        ctx.beginPath(); ctx.lineCap='round'; ctx.lineJoin='round'; ctx.strokeStyle=pass?`rgba(255,255,255,${0.9*fade})`:`rgba(${rgb},${0.9*fade})`; ctx.lineWidth=pass?2.2:8;
+        for(let i=0;i<f.pts.length;i++){ const v=f.pts[i], j=(i===0||i===f.pts.length-1)?0:0.08*Math.sin(f.seed+i*4.7+f.t*34), q=P(v[0]+j,v[1]-j,v[2]+j*0.35); i?ctx.lineTo(q[0],q[1]):ctx.moveTo(q[0],q[1]); } ctx.stroke();
+      }
+    }
+    ctx.lineCap='butt'; ctx.restore();
+  }});
 }
 function drawMageWorld(list){
   const p = player;
@@ -3046,6 +3076,7 @@ function drawMageWorld(list){
       ctx.drawImage(SceneFX.glowSprite(255,150,50), a[0]-40, a[1]-40, 80, 80); ctx.restore();
       const R2 = mat(t*5, t*3, 0); drawRig({x:M.x+ox2, y:M.y}, [BX(R2,[0,0,0],[11,11,11],'#5a3a28'), BX(R2,[0,0,0],[8,12.5,8],'#ff7a2a',true)], PX*1.2, z);
     } }});
+  drawMageFx(list);
   if(p && p.mShieldT > 0) list.push({k:p.y+0.02, f:()=>{
     const t = performance.now()/1000, c = P(p.x,p.y,0.75+(p.z||0)), r = 0.78*SX, fade = Math.min(1, p.mShieldT/0.8), hit = Math.max(0, p.mShieldHit||0)/0.25;
     ctx.save(); ctx.globalCompositeOperation = 'lighter';
@@ -3647,7 +3678,10 @@ function showBanner(t){ banner = {txt:t, t:3}; }
 // =====================================================================
 //  怪物 AI（前摇 → 判定 → 后摇，全部可读可闪避）
 // =====================================================================
-function setSt(m, s){ m.st = s; m.t = 0; m.didHit = false; }
+function setSt(m, s){
+  if(shouldDelayMobAttack(m,s)){ m.st = 'chase'; m.t = 0; m.cd = Math.max(m.cd||0, 0.22 + Math.random()*0.24); return; }
+  m.st = s; m.t = 0; m.didHit = false;
+}
 function inSector(m, ang, range, arc){
   const p = player, d = dist(m,p);
   if(d > range + p.r || p.z > 0.7) return false;
@@ -3669,6 +3703,15 @@ function faceTo(m, a, rate, dt){ m.ang += angDiff(a, m.ang)*Math.min(1, dt*rate)
 
 const RANGED_T = new Set(['skeleton','stray','blaze','enderman']);
 const MOB_WINDUP = new Set(['skill','wind','aim','aimw','crouch','bitew','bite','dive','fuse','blink','spit','touchw','claww','chargew','punchw','wavew','slamw','swinge','rootw','pop']);
+const MOB_ATTACK_START = new Set(['wind','aim','aimw','crouch','bitew','dive','fuse','blink','spit','touchw','claww','chargew','punchw','wavew','slamw','swinge','rootw']);
+const MOB_ATTACK_ACTIVE = new Set([...MOB_ATTACK_START,'act','bite','claw1','claw2','charge','punch','slam','touchw','aim']);
+function shouldDelayMobAttack(m,s){
+  if(!MOB_ATTACK_START.has(s) || !m.awake || m.boss) return false;
+  let nearby = 0;
+  for(const o of mobs) if(o!==m && o.hp>0 && o.awake && MOB_ATTACK_ACTIVE.has(o.st) && dist(o,m)<3.6) nearby++;
+  const limit = 2 + (floorN>6 ? 1 : 0) + (m.type==='spider'||m.type==='cavespider' ? 1 : 0);
+  return nearby >= limit;
+}
 function mobWindupDur(m){
   if(m.st==='skill') return Math.max(0.35, m.skW||0.75);
   return ({wind:0.55,aim:0.85,aimw:0.5,crouch:0.45,bitew:0.3,bite:0.15,dive:0.32,fuse:1.5,blink:0.28,spit:0.3,touchw:0.5,claww:0.4,chargew:0.55,punchw:0.7,wavew:0.95,slamw:1.1,swinge:0.6,rootw:1,pop:0.4}[m.st]||0.65);
@@ -3676,10 +3719,14 @@ function mobWindupDur(m){
 let mobSlotN = 0;
 function stepMob(m, dt){
   const p = player;
-  m.t += dt; m.cd -= dt; m.flash -= dt; m.frozen -= dt; m.slamCD -= dt; m.waveCD -= dt; m.alertT = Math.max(0, (m.alertT||0)-dt);
+  m.t += dt; m.cd -= dt; m.flash -= dt; m.frozen -= dt; m.slamCD -= dt; m.waveCD -= dt; m.alertT = Math.max(0, (m.alertT||0)-dt); m.alertCd = Math.max(0, (m.alertCd||0)-dt);
   if(m.hp<=0) return;
-  const d = dist(m,p), toP = Math.atan2(p.y-m.y, p.x-m.x);
+  const d = dist(m,p), toP = Math.atan2(p.y-m.y, p.x-m.x), startX = m.x, startY = m.y;
   if(!m.awake && (m.type==='mimic' ? d<3.4 : (d<9 && los(m,p)))){ m.awake = true; m.alertT = 0.9; }
+  if(m.awake && d<11 && los(m,p) && m.alertCd<=0){
+    m.alertCd = 1.25;
+    for(const o of mobs) if(o!==m && o.hp>0 && !o.awake && dist(o,m)<5.5){ o.awake = true; o.alertT = 0.75; if(o.st==='idle') setSt(o,'chase'); }
+  }
   let want = null, spd = m.spd;
   m.tint = 0;
   if(m.st==='stun'){ if(m.t>=m.stunT) setSt(m,'chase'); }
@@ -3958,6 +4005,14 @@ function stepMob(m, dt){
   const dk = Math.exp(-9*dt); m.vx *= dk; m.vy *= dk;
   m.x += (m.mvx + m.vx)*dt; m.y += (m.mvy + m.vy)*dt;
   if(!(m.type==='wraith' && m.st==='chase' && d>5)) collideCircle(m);
+  if(m.st==='chase' && want!==null){
+    const moved = Math.hypot(m.x-startX,m.y-startY), expected = Math.max(0.01,spd*dt*0.08);
+    if(moved < expected) m.stuckT = (m.stuckT||0) + dt; else m.stuckT = 0;
+    if(m.stuckT > 0.35){
+      if(m.stuckSide===undefined) m.stuckSide = Math.random()<0.5 ? -1 : 1;
+      const escape = want + m.stuckSide*1.15; m.vx += Math.cos(escape)*2.4; m.vy += Math.sin(escape)*2.4; m.stuckT = 0;
+    }
+  }
   const sp = Math.hypot(m.mvx, m.mvy);
   m.walk += sp*dt*3; m.sf = clamp(sp/m.spd,0,1);
 }
@@ -4168,6 +4223,8 @@ function simStep(dt){
   for(const r of rings) r.t += dt; rings = rings.filter(r=>r.t<0.3);
   for(const b of bursts) b.t += dt; bursts = bursts.filter(b=>b.t<0.2);
   for(const g of glows) g.t += dt; glows = glows.filter(g=>g.t<(g.gold||g.frost?0.8:g.red?0.45:0.22));
+  for(const f of mageFx){ f.t += dt; if(f.kind==='orb'){ f.x += f.vx*dt; f.y += f.vy*dt; f.z += f.vz*dt; f.vz -= 2.4*dt; f.spin += dt*2; } else if(f.kind==='rune') f.rot += dt*0.7; }
+  mageFx = mageFx.filter(f=>f.t < f.life);
   for(const z of zaps) z.t -= dt; zaps = zaps.filter(z=>z.t>0);
   for(const q of pillars) q.t += dt; pillars = pillars.filter(q=>q.t<(q.life||0.4));
   for(const s2 of streaks) s2.t += dt; streaks = streaks.filter(s2=>s2.t<0.25);
