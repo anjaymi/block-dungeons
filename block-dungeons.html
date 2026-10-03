@@ -510,7 +510,9 @@ const ENCH = {
 // 局内构筑原型：不新增资源，只用现有附魔组合改变战斗循环。
 const RESONANCE = {
   fireCrit: {n:'灼裂', ico:'🔥✦', col:'#ffad62', keys:['fire','crit'], d:'燃烧目标被暴击时引发范围爆炸'},
-  arcaneArt:{n:'奥能过载', ico:'🔮⏳', col:'#c59cff', keys:['arcane','artcd'], d:'使用神器后，奥术命中会返还神器冷却'}
+  arcaneArt:{n:'奥能过载', ico:'🔮⏳', col:'#c59cff', keys:['arcane','artcd'], d:'使用神器后，奥术命中会返还神器冷却'},
+  soulEcho: {n:'灵魂回响', ico:'👻✦', col:'#79e6ff', keys:['soul','leech'], d:'击杀返还法力，并缩短技能冷却'},
+  phaseHunt: {n:'相位猎杀', ico:'💨✧', col:'#8ee6ff', keys:['swift','perfect'], d:'完美闪避后下一击冻结并追加伤害'}
 };
 function resonanceEnabled(id){
   if(!player || !RESONANCE[id]) return false;
@@ -556,6 +558,32 @@ function triggerFireCrit(m, dmg){
   addText(m.x,m.y,1.9*m.scale,'灼裂!','#ffb060',1.1);
   setResToast('灼裂 · 范围爆炸', RESONANCE.fireCrit.col);
   fireBoom(m.x,m.y,Math.max(2.5,dmg*0.18));
+}
+function triggerSoulEcho(m){
+  if(!resonanceEnabled('soulEcho')) return;
+  const p = player, mana = 5 + 2*L('soul');
+  p.mana = Math.min(p.maxMana, p.mana + mana);
+  p.spellCD = Math.max(0, p.spellCD-0.35);
+  p.clsCD = Math.max(0, p.clsCD-0.25);
+  if(p.mCD) for(let i=0;i<p.mCD.length;i++) p.mCD[i] = Math.max(0, p.mCD[i]-0.25);
+  addText(m.x,m.y,1.75*m.scale,'灵魂回响','#79e6ff',1.0);
+  rings.push({x:m.x,y:m.y,r:0.9,t:0,col:'90,216,255'});
+  setResToast(`灵魂回响 · 法力 +${mana}`, RESONANCE.soulEcho.col);
+}
+function armPhaseHunt(){
+  if(!resonanceEnabled('phaseHunt')) return;
+  player.phaseReady = true; player.phaseT = 2.5;
+  setResToast('相位猎杀已准备', RESONANCE.phaseHunt.col);
+}
+function consumePhaseHunt(m, dmg, ang){
+  const p = player;
+  if(!resonanceEnabled('phaseHunt') || !p.phaseReady || p.phaseT<=0 || !m || m.hp<=0) return false;
+  p.phaseReady = false; p.phaseT = 0; m.frozen = Math.max(m.frozen||0, 1.25);
+  addText(m.x,m.y,1.9*m.scale,'相位猎杀','#8ee6ff',1.05);
+  rings.push({x:m.x,y:m.y,r:1.1,t:0,col:'142,220,255'});
+  damageMob(m, Math.max(3,dmg*0.25), ang, 6, 7, false, true);
+  setResToast('相位猎杀 · 冻结并追加伤害', RESONANCE.phaseHunt.col);
+  return true;
 }
 // 法师专属技能（4/5/6），按等级解锁
 const MAGE_SK = [
@@ -1154,7 +1182,7 @@ function newPlayer(){
     char:CHAR_ORDER[selC]||'akane', cls:CLASS_ORDER[selK]||'warrior', clsCD:0, holyT:0, weapon:'sword', st:'move', ph:'', pt:0, combo:-1, comboKeep:0, atkDef:null, atkAng:0, lungeV:0, hitSet:null, prevBlades:null,
     trail:[], buf:null, rollT:0, rollCD:0, rollDir:{x:1,y:0}, charge:0, potCD:0, stT:0, dodgedT:0, perfectT:0,
     arrows:20, ench:{}, emeralds:0, rig:null, speedFrac:0, z:0, vz:0, souls:0, artCD:[0,0,0], rageT:0, shotN:0, shotKeep:0, healT:0, mana:100, maxMana:100, spell:'fireball', spellCD:0, castDone:false,
-    arcaneArtReady:false, arcaneArtT:0, resToast:'', resToastCol:'#fff', resToastT:0,
+    arcaneArtReady:false, arcaneArtT:0, phaseReady:false, phaseT:0, resToast:'', resToastCol:'#fff', resToastT:0,
     lvl:1, xp:0, pts:0, attr:{str:15, dex:15, vit:15, ene:10}, eq:{helm:null,amulet:null,weapon:null,armor:null,offhand:null,ring1:null,ring2:null,belt:null,gloves:null,boots:null}, alt:{weapon:null, offhand:null}, swapSet:0, bag:[], cube:[null,null,null,null], cursor:null, idScrolls:3, chillT:0,
     G:{str:15,dex:15,vit:15,ene:10,effIas:0,effFcr:0,effFrw:0,skills:0,wMin:4,wMax:8,mf:0,gf:0,defense:0,drDef:0,dr:0,block:0,resF:0,resC:0,resL:0,resP:0,light:0}};
 }
@@ -3363,7 +3391,7 @@ function bladeSegs(p, rig){
 
 function stepPlayer(dt){
   const p = player;
-  p.rollCD -= dt; p.potCD -= dt; p.inv -= dt; p.flash -= dt; p.comboKeep -= dt; p.perfectT -= dt; p.rageT -= dt; p.shotKeep -= dt; if(p.shotKeep<=0) p.shotN = 0; p.healT -= dt; p.spellCD -= dt; p.clsCD -= dt; p.holyT -= dt; p.arcaneArtT = Math.max(0, p.arcaneArtT-dt); p.resToastT = Math.max(0, p.resToastT-dt); if(p.arcaneArtT<=0) p.arcaneArtReady = false;
+  p.rollCD -= dt; p.potCD -= dt; p.inv -= dt; p.flash -= dt; p.comboKeep -= dt; p.perfectT -= dt; p.rageT -= dt; p.shotKeep -= dt; if(p.shotKeep<=0) p.shotN = 0; p.healT -= dt; p.spellCD -= dt; p.clsCD -= dt; p.holyT -= dt; p.arcaneArtT = Math.max(0, p.arcaneArtT-dt); p.phaseT = Math.max(0, p.phaseT-dt); p.resToastT = Math.max(0, p.resToastT-dt); if(p.arcaneArtT<=0) p.arcaneArtReady = false; if(p.phaseT<=0) p.phaseReady = false;
   p.mana = Math.min(p.maxMana, p.mana + dt*9*(1+0.25*L('arcane'))*(1+(p.G.mregen||0)/100)*(p.maxMana/100));
   if(p.G.regen) p.hp = Math.min(p.maxhp, p.hp + dt*p.G.regen);
   p.chillT -= dt;
@@ -3568,6 +3596,7 @@ function meleeHit(m, cx, cy){
   dmg = gearProcs(m, dmg);
   if(crit) triggerFireCrit(m, dmg);
   const a = Math.atan2(m.y-p.y, m.x-p.x);
+  consumePhaseHunt(m, dmg, a);
   const fin = p.combo === W.combo.length-1;
   damageMob(m, dmg, a, d.kb*(fin?1.4:1), d.kb, crit);
   sparks(cx, cy, 0.55, a, crit || fin);
@@ -3630,6 +3659,7 @@ function burst(x,y,z,a){
 }
 function killMob(m){
   stats.kills++;
+  triggerSoulEcho(m);
   { const sp = Math.hypot(m.vx,m.vy)||1, launch = Math.min(1, sp/6);
     if(m.type==='slime' && !m.small && m.scale>0.8){ for(let k2=0;k2<2;k2++){ const s2 = spawnMob('slime', m.x+rnd(-0.5,0.5), m.y+rnd(-0.5,0.5)); if(s2){ s2.small = 1; s2.hp = s2.maxhp = 7; s2.scale = 0.55; s2.r = 0.2; s2.dmg *= 0.6; s2.awake = true; s2.st = 'crouch'; s2.z = Math.max(0.05, m.z||0); } } }
     corpses.push({type:m.type, vox:m.vox, voxStyle:m.voxStyle, voxT:m.voxT, x:m.x, y:m.y, z:m.z||0, ang:m.ang, scale:m.scale, r:m.r, vx:m.vx*1.2, vy:m.vy*1.2, vz:2.5+launch*3.5, st:'dead', t:0, walk:m.walk, sf:0, fuse:0, flash:0.12, fall:0, spin:rnd(-1,1)*launch*6});
@@ -3661,7 +3691,7 @@ function hurtPlayer(dmg, src, ang, el='phys', blockable=false){
   if(state!=='play') return false;
   if(src && src.type && src.hp !== undefined && !los(src, p)) return false;   // 修复：怪物近战不能隔墙命中
   if(p.inv>0){
-    if(p.st==='roll' && p.dodgedT<=0){ p.dodgedT = 0.5; addText(p.x,p.y,1.6,'闪避!','#7fe8ff',1.1); if(L('perfect')) p.perfectT = 1.5; slowT = Math.max(slowT, 0.18); }
+    if(p.st==='roll' && p.dodgedT<=0){ p.dodgedT = 0.5; addText(p.x,p.y,1.6,'闪避!','#7fe8ff',1.1); if(L('perfect')){ p.perfectT = 1.5; armPhaseHunt(); } slowT = Math.max(slowT, 0.18); }
     return false;
   }
   const G = p.G;
@@ -5177,13 +5207,14 @@ function drawRefButton(b, label, col, active=false, sub=''){
   ctx.restore();
 }
 function drawResonanceHUD(x,y,w){
-  const p=player, K=UIK, ids=['fireCrit','arcaneArt'];
+  const p=player, K=UIK, ids=['fireCrit','arcaneArt','soulEcho','phaseHunt'];
   K.text('共鸣', x, y, 11, '#e2d5ff');
   ids.forEach((id,i)=>{
-    const R=RESONANCE[id], active=resonanceEnabled(id), armed=id==='arcaneArt'&&p.arcaneArtReady;
-    const xx=x+42+i*Math.max(126,(w-42)/2), state=armed?'已充能':active?'已激活':`${resonanceProgress(id)}/2`;
-    K.text(`${R.ico} ${R.n}`,xx,y,11,active?R.col:'#8f8b9f');
-    K.text(state,xx,y+15,10,armed?'#fff0a0':active?R.col:'#777', 'left');
+    const R=RESONANCE[id], active=resonanceEnabled(id), armed=(id==='arcaneArt'&&p.arcaneArtReady)||(id==='phaseHunt'&&p.phaseReady);
+    const col=i%2, row=Math.floor(i/2), xx=x+42+col*Math.max(126,(w-42)/2), yy=y+row*27;
+    const state=armed?(id==='phaseHunt'?'已准备':'已充能'):active?'已激活':`${resonanceProgress(id)}/2`;
+    K.text(`${R.ico} ${R.n}`,xx,yy,11,active?R.col:'#8f8b9f');
+    K.text(state,xx,yy+15,10,armed?'#fff0a0':active?R.col:'#777', 'left');
   });
   if(p.resToastT>0) K.text(p.resToast,x+w-4,y+15,10,p.resToastCol,'right');
 }
@@ -5256,7 +5287,7 @@ function drawReferenceMobileHUD(){
   K.bar(132, 26, 250, 21, p.hp/p.maxhp, {col:'#e43e42',hi:'#ff9b80',lo:'#67161c',value:`${Math.ceil(p.hp)} / ${p.maxhp}`,ts:12});
   K.bar(132, 57, 250, 17, p.mana/p.maxMana, {col:'#2c9eea',hi:'#8ee1ff',lo:'#123c74',value:`${Math.round(p.mana)} / ${p.maxMana}`,ts:11});
   K.text(`${(CLASS_INFO[p.cls]||{}).ico||'✦'} ${(CLASS_INFO[p.cls]||{}).n||''} Lv.${p.lvl}`, 132, 96, 13, (CLASS_INFO[p.cls]||{}).col||'#c8b0ff');
-  K.panel(18, 126, 360, 98, {alpha:0.9});
+  K.panel(18, 126, 360, 128, {alpha:0.9});
   K.text(`⌖ 第 ${floorN} 层 · ${theme.name}`, 38, 148, 15, '#ffe08a');
   K.text('🪙 ' + p.emeralds, 42, 180, 14, '#ffd75e'); K.text('⚿ ' + stats.kills, 132, 180, 14, '#ffc850'); K.text('✦ ' + Math.floor(p.souls), 220, 180, 14, '#bd91ff');
   drawResonanceHUD(38, 202, 330);
