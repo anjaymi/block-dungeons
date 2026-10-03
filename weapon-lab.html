@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>武器玩法实验版 · Block Dungeons</title>
+<style>
+html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#0a0d14;color:#eee;font:14px system-ui,"Microsoft YaHei",sans-serif}
+iframe{position:fixed;inset:0;border:0;width:100%;height:100%}
+details{position:fixed;z-index:2;left:12px;top:12px;max-width:min(360px,calc(100vw - 48px));border:1px solid #6d6554;border-radius:8px;background:#161b24ed;box-shadow:0 6px 24px #0008}
+summary{padding:9px 12px;cursor:pointer;color:#ffe0a0;user-select:none}
+.help{padding:0 14px 12px;line-height:1.7}.help p{margin:8px 0}.help a{color:#8fd9ff}
+button{background:#303b4b;color:#fff;border:1px solid #647387;border-radius:5px;padding:6px 10px;margin:2px;cursor:pointer}
+#status{font-size:12px;color:#a8cddf}#error{display:none;color:#ffb9a5;white-space:pre-wrap}
+#boot{position:fixed;inset:0;z-index:3;display:grid;place-items:center;background:#10151ff2;line-height:1.7;padding:24px}
+</style>
+</head>
+<body>
+<iframe id="game" title="Block Dungeons 武器实验版" allow="fullscreen;autoplay" allowfullscreen></iframe>
+<details id="help" open>
+<summary>武器玩法实验版 · 0.1</summary>
+<div class="help">
+<p><strong>第二击之后松手片刻，再按攻击。</strong> 等待提示“变招就绪”。一直按住仍是基础连段，普通快速连点不会触发变招。</p>
+<p>巨剑：定向重劈，放弃旋风。<br>双镰：勾回前方第一名轻型敌人，再近身剪击。<br>战锤：横砸轻型敌人，撞墙或撞怪结算一次。</p>
+<p>重型敌人和 Boss 不会被拉走或打飞；墙体与其他单位会阻挡位移。</p>
+<p id="status" role="status">加载原版与实验模块…</p>
+<p><button data-weapon="greatsword">巨剑</button><button data-weapon="sickles">双镰</button><button data-weapon="hammer">战锤</button></p>
+<p>切换会重新加载游戏并清空当前局，进入准备界面后开始。实验版未做完整平衡验收。</p>
+<p><a href="block-dungeons.html">返回原版</a> · <a href="docs/weapon-gameplay-lab.md">版本说明</a></p>
+<p id="error" role="alert"></p>
+</div>
+</details>
+<div id="boot" role="status">正在加载武器玩法实验版…</div>
+<script>
+(function(){
+  'use strict';
+  const frame=document.getElementById('game'), status=document.getElementById('status'), boot=document.getElementById('boot');
+  let ready=false, monitor=null;
+  function fail(message){ready=false;document.getElementById('help').open=true;const e=document.getElementById('error');e.style.display='block';e.textContent=message;status.textContent='实验模块未加载；没有改动原版';boot.style.display='none';}
+  function load(kind){
+    if(ready && !confirm('重新加载并清空当前局，切换实验武器？'))return;
+    ready=false;if(monitor){clearInterval(monitor);monitor=null;}
+    boot.style.display='grid';document.getElementById('error').style.display='none';
+    const u=new URL('block-dungeons.html',location.href);u.searchParams.set('weaponKind',kind);frame.src=u.href;
+  }
+  frame.addEventListener('load',()=>{
+    try {
+      const doc=frame.contentDocument;if(!doc)throw new Error('无法访问游戏页面');
+      const script=doc.createElement('script');script.src=new URL('weapon-gameplay.js?v=0.1.0',location.href).href;
+      script.onload=()=>{
+        if(!frame.contentWindow.WeaponGameplay){fail('模块未成功初始化，请查看浏览器控制台。');return;}
+        ready=true;boot.style.display='none';status.textContent='已加载 · 请选择英雄与实验武器后开始';frame.contentWindow.focus();
+        monitor=setInterval(()=>{try{const s=frame.contentWindow.WeaponGameplay.status();status.textContent=s.name?(s.ready?'变招就绪 · 再按攻击：':'第二击后松手，再按：')+s.name:'当前武器未增加变招 · 保持原版';}catch(e){clearInterval(monitor);monitor=null;}},100);
+      };
+      script.onerror=()=>fail('加载 weapon-gameplay.js 失败。原版入口仍可使用。');
+      doc.body.appendChild(script);
+    } catch(e){fail('实验入口需要同源 HTTP 服务。请在仓库目录运行 python -m http.server 8000，再访问 /weapon-lab.html。\n'+e.message);}
+  });
+  document.querySelectorAll('[data-weapon]').forEach(b=>b.addEventListener('click',()=>load(b.dataset.weapon)));
+  if(location.protocol==='file:'){fail('实验入口使用同源页面集成，不支持直接双击。请运行 python -m http.server 8000 后访问本页，或点击“返回原版”。');}
+  else{const kind=new URLSearchParams(location.search).get('weaponKind');load(['greatsword','sickles','hammer'].includes(kind)?kind:'greatsword');}
+})();
+</script>
+</body>
+</html>
