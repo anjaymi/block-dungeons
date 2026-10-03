@@ -545,7 +545,7 @@ function spawnVoxBoss(key, x, y, room, lord){
   m.boss = B; m.bossKey = key; m.lord = !!lord;
   m.hp = m.maxhp = MOB.golem.hp*B.hp*k*(1+0.25*sc); m.dmg = MOB.golem.dmg*B.dmg*(lord?0.85:1)*(1+0.12*sc);
   m.spd = MOB.golem.spd*B.spd; m.scale = B.sc*(lord?0.9:1); m.r = B.r*(lord?0.9:1); m.z = 0;
-  m.skCD = 3.5; m.room = room ? room.id : m.room; m.awake = true; m.st = 'stun'; m.t = 0; m.stunT = 1.4;
+  m.skCD = 3.5; m.room = room ? room.id : m.room; m.awake = true; m.alertT = 1.2; m.st = 'stun'; m.t = 0; m.stunT = 1.4;
   if(window.VoxMobs) VoxMobs.prepare(key);
   pillars.push({x, y, t:0, h:4, life:1.2, beam:true}); rings.push({x, y, r:2.2, t:0, col:B.col}); shake = Math.max(shake, 10);
   showBanner(`${lord?'领主':'首领'}「${B.n}」现身！`);
@@ -589,7 +589,7 @@ function bossSkill(m, dt, d, toP){
         const a = toP + Math.PI + (k-1)*0.9, x = m.x+Math.cos(a)*1.8, y = m.y+Math.sin(a)*1.8;
         if(wallAt(x,y)) continue;
         const key = pick(pool.length ? pool : ['vm_slime']), o = spawnMob(VOXMOB[key].base, x, y);
-        if(o){ applyVox(o, key); o.summoned = true; o.awake = true; o.room = m.room; o.st = 'stun'; o.t = 0; o.stunT = 0.6; pillars.push({x, y, t:0, h:1.6}); }
+        if(o){ applyVox(o, key); o.summoned = true; o.awake = true; o.alertT = 0.8; o.room = m.room; o.st = 'stun'; o.t = 0; o.stunT = 0.6; pillars.push({x, y, t:0, h:1.6}); }
       }
       waves.push({x:m.x, y:m.y, r:m.r, max:6+en*2, spd:5, dmg:m.dmg*0.8, hit:false, jumped:false});
       shake = Math.max(shake, 8); done(9); break; }
@@ -1411,7 +1411,7 @@ function findBlinkSpot(m, p, r0, r1){
 function spawnMob(type, x, y){
   const d = MOB[type], sc = floorN-1;
   const m = {type, x, y, ang:rnd(0,6.28), r:d.r, hp:d.hp*(1+0.22*sc), maxhp:d.hp*(1+0.22*sc), dmg:d.dmg*(1+0.12*sc),
-    spd:d.spd*rnd(0.92,1.08), mass:d.mass, poise:d.poise, walk:rnd(0,6), flash:0, tint:0, frozen:0,
+    spd:d.spd*rnd(0.92,1.08), mass:d.mass, poise:d.poise, walk:rnd(0,6), flash:0, tint:0, frozen:0, alertT:0,
     mvx:0, mvy:0, vx:0, vy:0, cd:rnd(0.3,1.2), awake:false, st:'idle', t:0, fuse:0, slamCD:3, strafe:pick([-1,1]), tpCD:rnd(1,3),
     scale: (type==='golem'?1.9:(MCSCALE[type]||1)), z: type==='blaze'?1.05:0, didHit:false, waveCD:4};
   if(type==='wraith') m.alpha = 0.8;
@@ -3415,7 +3415,8 @@ function onActEnd(){
 function damageMob(m, dmg, ang, kb, poiseDmg, crit, heavy){
   if(m.hp<=0) return;
   m.hp -= dmg; m.flash = heavy ? 0.16 : 0.12;
-  if(!m.helpT || m.helpT < performance.now()){ m.helpT = performance.now() + 1500; for(const o of mobs) if(!o.awake && o.hp>0 && dist(o,m) < 6 && o.type!=='mimic') { o.awake = true; if(o.st==='idle') setSt(o,'chase'); } }
+  if(!m.helpT || m.helpT < performance.now()){ m.helpT = performance.now() + 1500; for(const o of mobs) if(!o.awake && o.hp>0 && dist(o,m) < 6 && o.type!=='mimic') { o.awake = true; o.alertT = 0.75; if(o.st==='idle') setSt(o,'chase'); } }
+  if(!m.awake) m.alertT = 0.9;
   m.awake = true;
   m.flinch = heavy ? 0.3 : 0.15; m.flinchMax = m.flinch; m.flinchA = ang; m.flinchAmp = heavy ? 0.75 : 0.4;
   glows.push({x:m.x, y:m.y, t:0, r:0.9*m.scale});
@@ -3590,13 +3591,18 @@ function pathDir(m, toP){
 function faceTo(m, a, rate, dt){ m.ang += angDiff(a, m.ang)*Math.min(1, dt*rate); }
 
 const RANGED_T = new Set(['skeleton','stray','blaze','enderman']);
+const MOB_WINDUP = new Set(['skill','wind','aim','aimw','crouch','bitew','bite','dive','fuse','blink','spit','touchw','claww','chargew','punchw','wavew','slamw','swinge','rootw','pop']);
+function mobWindupDur(m){
+  if(m.st==='skill') return Math.max(0.35, m.skW||0.75);
+  return ({wind:0.55,aim:0.85,aimw:0.5,crouch:0.45,bitew:0.3,bite:0.15,dive:0.32,fuse:1.5,blink:0.28,spit:0.3,touchw:0.5,claww:0.4,chargew:0.55,punchw:0.7,wavew:0.95,slamw:1.1,swinge:0.6,rootw:1,pop:0.4}[m.st]||0.65);
+}
 let mobSlotN = 0;
 function stepMob(m, dt){
   const p = player;
-  m.t += dt; m.cd -= dt; m.flash -= dt; m.frozen -= dt; m.slamCD -= dt; m.waveCD -= dt;
+  m.t += dt; m.cd -= dt; m.flash -= dt; m.frozen -= dt; m.slamCD -= dt; m.waveCD -= dt; m.alertT = Math.max(0, (m.alertT||0)-dt);
   if(m.hp<=0) return;
   const d = dist(m,p), toP = Math.atan2(p.y-m.y, p.x-m.x);
-  if(!m.awake && (m.type==='mimic' ? d<3.4 : (d<9 && los(m,p)))) m.awake = true;
+  if(!m.awake && (m.type==='mimic' ? d<3.4 : (d<9 && los(m,p)))){ m.awake = true; m.alertT = 0.9; }
   let want = null, spd = m.spd;
   m.tint = 0;
   if(m.st==='stun'){ if(m.t>=m.stunT) setSt(m,'chase'); }
@@ -4326,9 +4332,37 @@ function healthBar(m){
   ctx.fillStyle='rgba(0,0,0,.6)'; ctx.fillRect(t[0]-18,t[1]-4,36,6);
   ctx.fillStyle = m.st==='stun' ? '#9fe8ff' : '#e03030'; ctx.fillRect(t[0]-17,t[1]-3,34*Math.max(0,m.hp/m.maxhp),4);
 }
+function drawMobIdentity(m){
+  if(m.hp<=0) return;
+  const special = !!(m.boss || m.vox || ['creeper','enderman','blaze','wraith','hannya','mimic','treant'].includes(m.type));
+  if(!special && !(m.alertT>0)) return;
+  const q = P(m.x,m.y,1.55*m.scale+(m.z||0)), pulse = 0.5+0.5*Math.sin(performance.now()/150 + m.r*9);
+  const rgb = m.boss ? (m.enraged ? '255,70,45' : '255,190,70') : m.type==='creeper' ? '145,255,130' : RANGED_T.has(m.type) ? '185,145,255' : '100,225,255';
+  ctx.save(); ctx.globalCompositeOperation='lighter';
+  if(special && m.awake){
+    ctx.strokeStyle = `rgba(${rgb},${0.24+0.18*pulse})`; ctx.lineWidth = m.boss ? 3 : 1.5;
+    ctx.beginPath(); ctx.arc(q[0],q[1],10+(m.boss?5:2)*pulse,0,6.28); ctx.stroke();
+  }
+  if(m.alertT>0){
+    ctx.fillStyle = `rgba(${rgb},${0.65+0.3*pulse})`; ctx.font='bold 22px sans-serif'; ctx.textAlign='center'; ctx.textBaseline='middle';
+    ctx.fillText(m.boss ? '!' : '!', q[0], q[1]-24-8*pulse);
+  }
+  if((m.boss || (m===curTarget && m.voxName)) && m.awake){
+    ctx.globalCompositeOperation='source-over'; ctx.font='bold 12px sans-serif'; ctx.fillStyle = `rgba(${rgb},.95)`; ctx.textAlign='center'; ctx.textBaseline='bottom';
+    ctx.fillText((m.boss ? (m.lord?'领主 · ':'首领 · ') : '') + (m.voxName || (MOB[m.type]&&MOB[m.type].n) || m.type), q[0], q[1]-30);
+  }
+  ctx.restore();
+}
 function drawTelegraphs(){
   for(const m of mobs){
     if(m.hp<=0) continue;
+    if(m.awake && MOB_WINDUP.has(m.st)){
+      const u = clamp(m.t/mobWindupDur(m),0,1), q = P(m.x,m.y,1.5*m.scale+(m.z||0));
+      const rgb = m.boss ? '255,75,45' : RANGED_T.has(m.type) ? '190,145,255' : '255,100,65';
+      ctx.save(); ctx.globalCompositeOperation='lighter'; ctx.strokeStyle=`rgba(${rgb},${0.28+0.35*u})`; ctx.lineWidth=m.boss?3:2;
+      ctx.beginPath(); ctx.arc(q[0],q[1]-18,9+8*u,-Math.PI*0.8,Math.PI*0.8); ctx.stroke();
+      ctx.fillStyle=`rgba(${rgb},${0.7+0.25*u})`; ctx.font='bold 18px sans-serif'; ctx.textAlign='center'; ctx.textBaseline='middle'; ctx.fillText(m.st==='skill'?'✦':'!',q[0],q[1]-31-6*u); ctx.restore();
+    }
     if(m.type==='zombie' && m.st==='wind'){ const u = m.t/0.55; groundArc(m.x,m.y,m.ang,1.35,1.5,`rgba(255,40,20,${0.08+0.22*u})`, u>0.75?'rgba(255,80,40,.8)':null); }
     if(m.type==='spider'){
       if(m.st==='crouch'){ const L2 = Math.min(4.5, dist(m,player)+0.6), a = P(m.x,m.y,0.03), b = P(m.x+Math.cos(m.ang)*L2, m.y+Math.sin(m.ang)*L2, 0.03); ctx.strokeStyle=`rgba(255,40,20,${0.2+0.5*m.t/0.45})`; ctx.lineWidth = 10; ctx.lineCap='round'; ctx.beginPath(); ctx.moveTo(a[0],a[1]); ctx.lineTo(b[0],b[1]); ctx.stroke(); ctx.lineCap='butt'; }
@@ -4546,7 +4580,7 @@ function render(){
   curTarget = state==='play' ? computeAim(player.st==='bow'||player.st==='bowrec' ? 10 : weaponReach()).target : null;
   for(const m of mobs) if(m.hp>0) list.push({k:m.y, f:()=>{ shadow(m, m.r); let rig = mobRig(m);
     if(m.flinch>0){ const u = m.flinch/m.flinchMax, th = m.flinchAmp*Math.sin(u*Math.PI*0.5)*(m.type==='golem'?0.3:1), T = mul(mat(m.flinchA,0,0), mul(mat(0,th,0), mat(-m.flinchA,0,0))); rig = rig.map(b=>{ const nb = BX(mul(T,b.M), b.c, b.s, b.col, b.nf); nb.tx = b.tx; nb.sm = b.sm; return nb; }); }
-    drawRig(m, rig, PX*m.scale, m.z, m===curTarget ? '#e8232e' : null); healthBar(m); }});
+    drawRig(m, rig, PX*m.scale, m.z, m===curTarget ? '#e8232e' : null); healthBar(m); drawMobIdentity(m); }});
   drawMageWorld(list);
   drawCastCircle(list);
   for(const cl of clouds) list.push({k:cl.y-0.5, f:()=>{ const a2 = P(cl.x,cl.y,0.05); ctx.globalAlpha = Math.min(0.22, cl.t*0.1); ctx.fillStyle = 'rgba(110,220,110,1)'; ctx.beginPath(); ctx.ellipse(a2[0],a2[1],cl.r*SX,cl.r*SY,0,0,7); ctx.fill(); ctx.globalAlpha = 1; }});
