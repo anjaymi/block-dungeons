@@ -138,16 +138,18 @@ function drawNormalFace(b, ax, sgn, q, pts, f, col){
   const M = b.M, du = nmBitAxis(q[1]^q[0]), dv = nmBitAxis(q[3]^q[0]);
   const base = [M[ax]*sgn,M[3+ax]*sgn,M[6+ax]*sgn], L = [0,1,VZ], li = 1/Math.hypot(L[0],L[1],L[2]);
   const baseDot = (base[0]*L[0]+base[1]*L[1]+base[2]*L[2])*li;
-  const t1 = [M[du],M[3+du],M[6+du]], t2 = [M[dv],M[3+dv],M[6+dv]], p0 = pts[q[0]], pu = pts[q[1]], pv = pts[q[3]], cells = 4;
+  const t1 = [M[du],M[3+du],M[6+du]], t2 = [M[dv],M[3+dv],M[6+dv]], p0 = pts[q[0]], pu = pts[q[1]], pv = pts[q[3]], cells = 6;
   ctx.save();
   ctx.beginPath(); ctx.moveTo(p0[0],p0[1]); ctx.lineTo(pu[0],pu[1]); ctx.lineTo(pts[q[2]][0],pts[q[2]][1]); ctx.lineTo(pv[0],pv[1]); ctx.closePath(); ctx.clip();
   ctx.transform((pu[0]-p0[0])/cells,(pu[1]-p0[1])/cells,(pv[0]-p0[0])/cells,(pv[1]-p0[1])/cells,p0[0],p0[1]);
-  const amp = 0.34*(b.nm||0.5), seed = b.nms||0;
+  const amp = 0.5*(b.nm||0.5), seed = b.nms||0; ctx.globalAlpha = 0.94;
   for(let y=0;y<cells;y++) for(let x=0;x<cells;x++){
     const tn = voxelNormal(seed,(x+0.5)/cells,(y+0.5)/cells), nx = base[0]+(t1[0]*tn[0]+t2[0]*tn[1])*amp, ny = base[1]+(t1[1]*tn[0]+t2[1]*tn[1])*amp, nz = base[2]+(t1[2]*tn[0]+t2[2]*tn[1])*amp, inv = 1/Math.max(0.001,Math.hypot(nx,ny,nz));
     const d = (nx*L[0]+ny*L[1]+nz*L[2])*li*inv;
-    ctx.fillStyle = shade(col,clamp(f+(d-baseDot)*0.52,0.34,1.18)); ctx.fillRect(x,y,1.06,1.06);
+    ctx.fillStyle = shade(col,clamp(f+(d-baseDot)*0.72,0.3,1.22)); ctx.fillRect(x,y,1.08,1.08);
   }
+  ctx.globalAlpha = 0.12*(b.nm||0.5); ctx.strokeStyle = '#ffffff'; ctx.lineWidth = 0.18; ctx.strokeRect(0.1,0.1,cells-0.2,cells-0.2);
+  ctx.globalAlpha = 0.08*(b.nm||0.5); ctx.strokeStyle = '#000000'; ctx.lineWidth = 0.16; ctx.strokeRect(0.24,0.24,cells-0.48,cells-0.48);
   ctx.restore();
 }
 
