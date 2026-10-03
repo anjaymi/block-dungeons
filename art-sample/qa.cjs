@@ -1,0 +1,4 @@
+const {chromium}=require('playwright');const fs=require('fs');
+(async()=>{const browser=await chromium.launch({headless:true,executablePath:'/usr/bin/chromium',args:['--no-sandbox']});const page=await browser.newPage({viewport:{width:1440,height:900}});let errors=[];page.on('pageerror',e=>errors.push(e.message));page.on('console',m=>{if(m.type()==='error')errors.push(m.text())});
+for(const [name,q] of [['after',''],['before','?baseline=1']]){await page.goto('http://127.0.0.1:8765/moss-outpost.html'+q);await page.waitForTimeout(5000);console.log(name,await page.evaluate(()=>({snap:window.MOSS_PREVIEW?.snapshot(),diag:World3D.diag(player.x,player.y)})));await page.screenshot({path:'art-sample/'+name+'.png'});await page.keyboard.press('h');await page.screenshot({path:'art-sample/'+name+'-clean.png'});fs.writeFileSync('art-sample/'+name+'-grid.json',JSON.stringify(await page.evaluate(()=>MOSS_PREVIEW.grid())));}
+console.log('errors',errors);await browser.close();})();

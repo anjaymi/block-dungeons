@@ -1,0 +1,16 @@
+PASS: generated inline JS parses
+PASS: 10 core gameplay sections identical
+PASS: decoration grid mutation identical
+PASS: 9 floor variants / 6 wall variants, 9 floor meshes, 2412 vertices are finite and bounded
+PASS: real startGame/genFloor with actual decoration produce identical seeded collision grid and game state
+{
+  state: 'play',
+  x: 11.5,
+  y: 25.5,
+  hp: 40,
+  room: null,
+  rooms: 6,
+  mobs: 0
+}
+WebGL was stubbed, not tested
+Storage writes []
