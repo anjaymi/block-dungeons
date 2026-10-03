@@ -100,6 +100,34 @@ const S = SFX.lib = {
   stairs(){ [784,659,523,392,262].forEach((f,i)=>tone({type:'triangle', f, dur:0.25, vol:0.1, t:i*0.09})); },
   enemyShot(px){ if(!ok('es', 70)) return; tone({type:'square', f:R(380,460), f2:160, dur:0.08, vol:0.07, px}); },
   bossRoar(px){ tone({type:'sawtooth', f:90, f2:55, dur:0.9, a:0.08, vol:0.3, px}); noise({dur:0.9, a:0.1, vol:0.3, type:'lowpass', f:500, f2:200, px}); },
+  monsterAlert(type,px){
+    if(!ok('ma:'+type,900)) return;
+    if(type==='golem'){ tone({type:'triangle',f:72,f2:42,dur:0.55,vol:0.2,px}); noise({dur:0.5,a:0.08,vol:0.24,type:'lowpass',f:260,f2:90,px}); }
+    else if(type==='slime'){ tone({type:'sine',f:150,f2:55,dur:0.22,vol:0.13,px}); noise({dur:0.16,vol:0.16,type:'lowpass',f:700,f2:180,px}); }
+    else if(type==='bat'||type==='cavespider'){ tone({type:'triangle',f:900,f2:1800,dur:0.12,vol:0.09,px}); tone({type:'sine',f:1500,f2:700,dur:0.1,vol:0.06,t:0.08,px}); }
+    else if(type==='skeleton'||type==='stray'){ noise({dur:0.16,vol:0.16,type:'bandpass',f:1900,f2:800,q:4,px}); tone({type:'square',f:460,f2:180,dur:0.12,vol:0.08,px}); }
+    else if(type==='creeper'){ noise({dur:0.32,a:0.04,vol:0.14,type:'highpass',f:1800,f2:4200,q:2,px}); }
+    else if(type==='blaze'){ noise({dur:0.24,vol:0.14,type:'bandpass',f:1200,f2:2600,q:2,px}); tone({type:'sawtooth',f:240,f2:480,dur:0.2,vol:0.06,px}); }
+    else { tone({type:'sawtooth',f:180,f2:90,dur:0.18,vol:0.1,px}); noise({dur:0.12,vol:0.1,type:'lowpass',f:900,f2:250,px}); }
+  },
+  monsterAttack(type,px){
+    if(!ok('mx:'+type,260)) return;
+    const fast=type==='bat'||type==='spider'||type==='cavespider', heavy=type==='golem'||type==='zombie'||type==='husk';
+    noise({dur:fast?0.07:heavy?0.2:0.12,a:0.006,vol:heavy?0.2:0.12,type:'bandpass',f:fast?2400:heavy?280:900,f2:fast?900:heavy?90:260,px});
+    tone({type:heavy?'sawtooth':'square',f:heavy?80:fast?520:230,f2:heavy?42:fast?980:110,dur:heavy?0.2:0.09,vol:heavy?0.16:0.07,px});
+  },
+  monsterHurt(type,px){
+    if(!ok('mh:'+type,130)) return;
+    const high=type==='bat'||type==='cavespider'||type==='stray';
+    tone({type:high?'triangle':'sawtooth',f:high?1100:220,f2:high?520:80,dur:0.11,vol:0.09,px});
+  },
+  monsterDeath(type,px){
+    if(!ok('md:'+type,180)) return;
+    if(type==='slime'){ noise({dur:0.35,vol:0.2,type:'lowpass',f:900,f2:120,px}); tone({type:'sine',f:260,f2:55,dur:0.35,vol:0.12,px}); }
+    else if(type==='golem'){ noise({dur:0.65,a:0.03,vol:0.3,type:'lowpass',f:420,f2:55,px}); tone({type:'triangle',f:110,f2:35,dur:0.6,vol:0.2,px}); }
+    else if(type==='skeleton'||type==='stray'){ noise({dur:0.3,vol:0.24,type:'bandpass',f:2600,f2:700,q:3,px}); }
+    else { noise({dur:0.28,vol:0.18,type:'lowpass',f:700,f2:110,px}); tone({type:'sawtooth',f:180,f2:45,dur:0.25,vol:0.1,px}); }
+  },
   denied(){ if(!ok('deny', 200)) return; tone({type:'square', f:180, dur:0.08, vol:0.08}); tone({type:'square', f:140, dur:0.1, vol:0.08, t:0.09}); },
   click(){ tone({type:'square', f:660, dur:0.03, vol:0.05}); },
   ready(i){ if(!ok('ready'+i, 300)) return; const f = [880, 988, 1175][i]||880; tone({type:'sine', f, dur:0.18, vol:0.07}); tone({type:'sine', f:f*1.5, dur:0.25, vol:0.05, t:0.07}); },
@@ -130,8 +158,8 @@ wrap('useArtifact', () => S.skill());
 wrap('useMageSkill', { pre: () => P().st, post: (r, st0) => { const p = P(); if(p.st === 'mcast' && st0 !== 'mcast'){ if(p.mSk === 'meteor') S.meteorCast(); } else if(p.cls === 'mage') S.denied(); } });
 wrap('releaseMageSkill', () => { const p = P(); if(p.mSk === 'shield') S.shieldUp(); });
 wrap('meleeHit', { pre: (m) => m.bleed || 0, post: (r, b0, m) => { const p = P(), d = p.atkDef || {}; S.hit(relX(m.x), false, d.kb >= 9 || !!d.shock); if(d.execute && b0 > 0 && !(m.bleed > 0)) S.execute(relX(m.x)); } });
-wrap('damageMob', (r, m, dmg, ang, kb, poise, crit, heavy) => { if(crit) S.hit(relX(m.x), true, heavy); });
-wrap('killMob', (r, m) => S.kill(relX(m.x), !!(m.boss || m.elite || m.scale > 1.4)));
+wrap('damageMob', { pre: (m) => m.hp, post: (r, hp0, m, dmg, ang, kb, poise, crit, heavy) => { if(crit) S.hit(relX(m.x), true, heavy); if(m && m.hp < hp0 && m.hp > 0) S.monsterHurt(m.type, relX(m.x)); } });
+wrap('killMob', (r, m) => { S.kill(relX(m.x), !!(m.boss || m.elite || m.scale > 1.4)); if(m && !m._sfxDeath){ m._sfxDeath = true; S.monsterDeath(m.type, relX(m.x)); } });
 wrap('hurtPlayer', { pre: () => [P().hp, P().mana, P().inv], post: (r, b) => { const p = P(); if(p.hp <= 0 && b[0] > 0) S.death(); else if(p.hp < b[0]) S.hurt(); else if(p.mana < b[1]) S.shieldHit(); else if(r === false && b[2] <= 0) S.block(); } });
 wrap('fireBoom', (r, x) => S.boom(relX(x)));
 wrap('lightning', (r, m) => S.zap(relX(m && m.x)));
@@ -144,6 +172,7 @@ wrap('startGame', () => S.click());
 
 // ---------- 轮询：分散在各处的事件（敌方弹体 / 陨石 / 护盾破碎 / 文字提示） ----------
 const seen = new WeakSet();
+const mobSeen = new WeakMap();
 let shieldWas = 0, lastT = 0;
 function poll(){
   requestAnimationFrame(poll);
@@ -161,7 +190,17 @@ function poll(){
     shieldWas = p.mShieldT || 0;
     if(typeof texts !== 'undefined') for(const t of texts){ if(seen.has(t)) continue; seen.add(t);
       if(t.txt === '背刺!' || t.txt === '影袭!') S.backstab(relX(t.x)); }
-    for(const m of mobs){ if(m.boss && m.awake && !m._sfxRoar){ m._sfxRoar = true; S.bossRoar(relX(m.x)); } }
+    for(const m of mobs){
+      const old = mobSeen.get(m), now = {hp:m.hp, st:m.st, awake:!!m.awake};
+      if(!old){ if(m.awake && !m.boss) S.monsterAlert(m.type, relX(m.x)); }
+      else {
+        if(old.hp > 0 && m.hp <= 0 && !m._sfxDeath){ m._sfxDeath = true; S.monsterDeath(m.type, relX(m.x)); }
+        if(m.awake && !old.awake && !m.boss) S.monsterAlert(m.type, relX(m.x));
+        if(m.hp > 0 && m.st !== old.st && /^(skill|wind|aim|aimw|crouch|bitew|bite|dive|fuse|blink|spit|touchw|claww|chargew|punchw|wavew|slamw|swinge|rootw|pop)$/.test(m.st||'')) S.monsterAttack(m.type, relX(m.x));
+      }
+      mobSeen.set(m, now);
+      if(m.boss && m.awake && !m._sfxRoar){ m._sfxRoar = true; S.bossRoar(relX(m.x)); }
+    }
   }catch(e){}
 }
 requestAnimationFrame(poll);
@@ -245,7 +284,7 @@ const AMB = {   // 环境音：持续底噪 + 随机事件
       if(Math.random()<0.025) voice(ambBus, {type:'square', f:rnd2(1800,2600), t0:t, dur:0.05, vol:0.015, lp:3000, rev:0.95, px:rnd2(-0.9,0.9)}); } },   // 远处矿镐
   ice:     { bed:{f:1400, q:2.5, v:0.03, wind:true}, ev(t){ if(Math.random()<0.05) voice(ambBus, {type:'sine', f:rnd2(2500,4200), t0:t, dur:0.4, vol:0.012, rev:0.9, px:rnd2(-0.8,0.8)}); } },
   nether:  { bed:{f:160, q:0.8, v:0.07}, ev(t){ if(Math.random()<0.12){ const f = rnd2(90,220); voice(ambBus, {type:'sine', f, f2:f*1.8, t0:t, dur:0.1, vol:0.05, rev:0.3, px:rnd2(-0.8,0.8)}); } } },   // 岩浆冒泡
-  desert:  { bed:{f:900, q:0.7, v:0.04, wind:true}, ev(t){} },
+  desert:  { bed:{f:900, q:0.7, v:0.04, wind:true}, ev(t){ if(Math.random()<0.07) nz(ambBus, {t0:t, dur:rnd2(0.8,1.8), a:0.25, vol:0.04, type:'bandpass', f:rnd2(700,1300), f2:rnd2(240,500), q:0.6, rev:0.55, px:rnd2(-0.85,0.85)}); } },   // 沙丘风啸
 };
 const rnd2 = (a,b) => a + Math.random()*(b-a);
 let curMus = null, musStart = 0, musStep = 0, musGain = null, curAmb = null, ambNodes = null, schedT = 0;
