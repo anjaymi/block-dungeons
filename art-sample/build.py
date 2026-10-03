@@ -10,7 +10,7 @@ s=s.replace('<script src="art-sample/world3d', '<script>window.MOSS_BASELINE = n
 s=s.replace("lctx.fillStyle = theme.dark;", "lctx.fillStyle = window.MOSS_BASELINE ? theme.dark : 'rgba(3,13,23,.57)';")
 s=s.replace("ctx.drawImage(SceneFX.radial('torchglow-strong'", "ctx.globalAlpha = window.MOSS_BASELINE ? 1 : .30; ctx.drawImage(SceneFX.radial('torchglow-strong'")
 s=s.replace("  if(exitOpen){ const s=P(exitPos.x,exitPos.y,.35);", "  ctx.globalAlpha = 1;\n  if(exitOpen){ const s=P(exitPos.x,exitPos.y,.35);")
-s=s.replace('</body>', '<script src="art-sample/preview.js"></script>\n</body>')
+s=s.replace('</body>', '<script src="art-sample/preview.js?v=2"></script>\n</body>')
 (root/'moss-outpost.html').write_text(s)
 w=(root/'world3d.js').read_text()
 w=w.replace("const FALLBACK_THEME = '苔石地牢';", """const FALLBACK_THEME = '苔石地牢';
