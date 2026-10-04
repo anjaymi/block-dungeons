@@ -63,7 +63,7 @@ test('拖动瞄准保持手指方向，不吸向偏离方向的敌人',()=>{
   const g=mobileGame(),t=touchAt(g,'attack');send(g,'touchstart',t);
   send(g,'touchmove',{...t,clientX:t.clientX+40});
   g.run(`const enemy=${mobCode};enemy.x=player.x+1;enemy.y=player.y+.65;mobs=[enemy];startAttack();`);
-  assert.equal(g.run('player.atkAng'),0);assert.equal(g.run('touch.attackTarget'),null);
+  assert.ok(g.run('Math.abs(player.atkAng)<1e-8'));assert.equal(g.run('touch.attackTarget'),null);
 });
 test('轻微触摸抖动留在死区，松手后的旧瞄准不覆盖新移动方向',()=>{
   const g=mobileGame(),t=touchAt(g,'attack');send(g,'touchstart',t);

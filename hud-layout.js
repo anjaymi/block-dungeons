@@ -21,10 +21,12 @@
       const ur=Math.max(34,22/s),gap=Math.max(86,ur*2+8),start=L.map.x-30-ur-gap*2;
       B.bag=circle(start,72,ur,'bag'); B.quest=circle(start+gap,72,ur,'quest'); B.settings=circle(start+gap*2,72,ur,'settings');
       L.move=circle(210,h-280,145); L.aim=circle(w-216,h-202,94);
-      B.attack=circle(w-216,h-202,94,'attack'); B.skill=circle(w-101,h-365,70,'skill');
-      B.potion=circle(w-271,h-376,66,'potion'); B.roll=circle(w-376,h-272,63,'roll');
-      B.spell=circle(w-397,h-125,72,'spell'); B.interact=circle(w-62,h-215,48,'interact');
-      B.more=circle(w-503,h-340,Math.max(42,22/s),'more');
+      L.map.h=Math.min(220,Math.max(140,h-460));
+      B.attack=circle(w-190,h-212,82,'attack'); B.roll=circle(w-355,h-209,56,'roll');
+      B.jump=circle(w-63,h-307,56,'jump'); B.skill=circle(w-199,h-367,58,'skill');
+      B.spell=circle(w-346,h-324,56,'spell'); B.potion=circle(w-485,h-258,56,'potion');
+      B.more=circle(w-497,h-398,Math.max(44,22/s),'more');
+      B.interact=rect(w-364,h-16-Math.max(88,44/s),344,Math.max(88,44/s),'interact'); L.aim=B.attack;
       L.progress=rect(w/2-205,h-62,410,18);
       L.boss=rect(w/2-Math.min(338,(w-1020)/2),0,Math.min(676,w-1020),145);
     }else{
@@ -43,15 +45,17 @@
     }
     // A portrait phone keeps top cards compact and places actions in two bottom rows.
     if(mobile && availableH>availableW){
-      L.vitals=rect(14,12,444,140); L.portrait=rect(12,4,142,142);
+      const ur=Math.max(44,22/s),gap=ur*2+8,right=w-ur-8;
+      L.vitals=rect(14,12,Math.min(444,w-ur*6-64),140); L.portrait=rect(12,4,142,142);
       L.map=rect(w-204,172,188,172,'map'); L.info=rect(24,164,w-244,78);
-      B.bag=circle(w-184,64,34,'bag'); B.quest=circle(w-111,64,34,'quest'); B.settings=circle(w-39,64,34,'settings');
-      L.move=circle(162,h-212,137);
-      B.attack=circle(w-137,h-188,86,'attack'); B.skill=circle(w-64,h-350,59,'skill');
-      B.potion=circle(w-190,h-358,58,'potion'); B.roll=circle(w-322,h-350,58,'roll');
-      B.spell=circle(w-316,h-194,62,'spell'); B.interact=circle(w-56,h-63,43,'interact');
-      B.more=circle(w-425,h-351,40,'more'); L.aim=B.attack;
-      L.progress=rect(w/2-165,h-38,330,12);
+      B.bag=circle(right-gap*2,64,ur,'bag'); B.quest=circle(right-gap,64,ur,'quest'); B.settings=circle(right,64,ur,'settings');
+      L.move=circle(152,h-202,124);
+      B.attack=circle(w-130,h-214,80,'attack'); B.roll=circle(w-292,h-214,56,'roll');
+      B.jump=circle(w-66,h-408,56,'jump'); B.skill=circle(w-213,h-408,56,'skill');
+      B.spell=circle(w-359,h-408,56,'spell'); B.potion=circle(w-504,h-408,56,'potion');
+      B.more=circle(80,h-408,Math.max(44,22/s),'more'); L.aim=B.attack;
+      B.interact=rect(w-364,h-16-Math.max(88,44/s),344,Math.max(88,44/s),'interact');
+      L.progress=rect(w/2-165,h-490,330,12);
       L.boss=rect(20,346,w-40,Math.min(140,(w-40)*.21));
     }
     L.boss.w=Math.max(180,L.boss.w);
@@ -64,7 +68,7 @@
     return b.r!==undefined?Math.hypot(x-b.x,y-b.y)<=b.r+pad:x>=b.x-pad&&x<=b.x+b.w+pad&&y>=b.y-pad&&y<=b.y+b.h+pad;
   }
   function hit(L,x,y){
-    for(const b of [...Object.values(L.buttons),...L.hotbar,...L.aux])if(contains(b,x,y))return b.action;
+    for(const b of [...Object.values(L.buttons),...L.hotbar,...L.aux])if(!b.hidden&&contains(b,x,y))return b.action;
     if(contains(L.map,x,y))return 'map';
     if(!L.mobile && contains(L.info,x,y))return 'quest';
     return null;

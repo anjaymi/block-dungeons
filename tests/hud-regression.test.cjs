@@ -2,7 +2,7 @@ const test=require('node:test');
 const assert=require('node:assert/strict');
 const HUD=require('../hud-layout.js');
 const {loadGame}=require('./game-harness.cjs');
-const setups=[[1672,941,false],[1280,720,false],[1920,1080,false],[844,390,true],[800,450,true],[390,844,true]];
+const setups=[[1672,941,false],[1280,720,false],[1920,1080,false],[844,390,true],[800,450,true],[568,320,true],[390,844,true],[320,568,true]];
 for(const [w,h,mobile]of setups)test(`${w}×${h} ${mobile?'手机':'PC'}：可操作区域留在屏幕内且命中对应动作`,()=>{
   const L=HUD.layout(w,h,mobile);
   const boxes=[L.vitals,L.portrait,L.map,L.info,...Object.values(L.buttons),...L.hotbar,...L.aux];
@@ -14,7 +14,7 @@ for(const [w,h,mobile]of setups)test(`${w}×${h} ${mobile?'手机':'PC'}：可�
     if(b.action){const cx=b.r===undefined?b.x+b.w/2:b.x,cy=b.r===undefined?b.y+b.h/2:b.y;
       assert.equal(HUD.hit(L,cx,cy),b.action);}
   }
-  if(mobile&&w>h)for(const b of Object.values(L.buttons))assert.ok(b.r*2*L.scale>=44-.01,`${b.action} target too small`);
+  if(mobile)for(const b of Object.values(L.buttons))assert.ok((b.r===undefined?Math.min(b.w,b.h):b.r*2)*L.scale>=44-.01,`${b.action} target too small`);
 });
 test('刘海安全区参与绘制坐标与点击换算',()=>{
   const L=HUD.layout(844,390,true,{left:30,right:15,top:6,bottom:12});
@@ -47,9 +47,9 @@ test('移动摇杆与攻击按钮支持两指独立输入，松手后均清理',
   g.events.touchend[0]({preventDefault(){},changedTouches:touches});
   assert.equal(g.run('touch.moveX'),0);assert.equal(g.run('touch.attackId'),null);assert.equal(g.run('mouse.l'),false);
 });
-test('按住翻滚可接奔跑，触摸取消清除奔跑状态',()=>{
+test('手机翻滚只触发翻滚，不再占用奔跑输入',()=>{
   const g=loadGame();g.run(`hudMode='mobile';const B=hudLayout().buttons.roll;const s=hudLayout().scale;`);
   const p=JSON.parse(g.run(`JSON.stringify({x:B.x*s,y:B.y*s})`));const t={identifier:5,clientX:p.x,clientY:p.y};
-  g.events.touchstart[0]({preventDefault(){},changedTouches:[t]});assert.equal(g.run('touch.run'),true);
+  g.events.touchstart[0]({preventDefault(){},changedTouches:[t]});assert.equal(g.run('player.buf.type'),'roll');assert.equal(g.run('touch.run'),false);
   g.events.touchcancel[0]({preventDefault(){},changedTouches:[t]});assert.equal(g.run('touch.run'),false);
 });

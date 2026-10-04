@@ -45,9 +45,9 @@
 <script src="scenefx.js?v=6"></script>
 <script src="ui-kit.js?v=2"></script>
 <script src="ui-motion.js?v=1"></script>
-<script src="hud-layout.js?v=1"></script>
-<script src="fantasy-hud.js?v=3"></script>
-<script src="hud-controller.js?v=4"></script>
+<script src="hud-layout.js?v=2"></script>
+<script src="fantasy-hud.js?v=4"></script>
+<script src="hud-controller.js?v=5"></script>
 <script src="inventory-layout.js?v=1"></script>
 <script src="inventory-assets.js?v=2"></script>
 <script src="inventory-controller.js?v=2"></script>
@@ -1605,7 +1605,7 @@ function computeFlow(pi,pj,maxD=30){
 const BUF = 0.22;   // 输入缓冲时长
 let showDiag = false;
 // ---- 横屏手机触控层：左侧移动摇杆，右侧瞄准与动作按钮 ----
-const touch = {moveId:null, aimId:null, titleId:null, attackId:null, bowId:null, rollId:null, skillId:null, potionId:null, runId:null,
+const touch = {moveId:null, aimId:null, titleId:null, attackId:null, bowId:null, rollId:null, jumpId:null, skillId:null, potionId:null, runId:null,
   moveX:0, moveY:0, run:false, aimAngle:0, aimPower:0, aimValid:false, moveOrigin:null, aimOrigin:null};
 function touchUIEnabled(){
   if(hudMode==='mobile')return true;
@@ -1634,6 +1634,14 @@ function touchButtonAt(x,y){
 function touchStick(origin,p,max){
   const dx = p.x-origin.x, dy = p.y-origin.y, d = Math.hypot(dx,dy) || 1, k = Math.min(1,d/max);
   return {x:dx/d*k, y:dy/d*k};
+}
+function updateTouchMove(p,L=touchLayout()){
+  const v=touchStick(touch.moveOrigin,p,L.move.r*.72),power=Math.hypot(v.x,v.y);
+  if(power<=.12){touch.moveX=touch.moveY=0;touch.run=false;return;}
+  const amount=(power-.12)/.88;
+  touch.moveX=v.x/power*amount;touch.moveY=v.y/power*amount;
+  // A wider travel leaves room to walk; hysteresis avoids sprint flicker at the edge.
+  if(power>=.9)touch.run=true;else if(power<=.76)touch.run=false;
 }
 function touchAimScreen(reachHint, aim){
   if(!player || state!=='play') return;
@@ -1696,11 +1704,11 @@ function touchStart(e){
     if(state!=='play') continue;
     if(touch.moveId===null && touchNear(hp,L.move,0)){
       touch.moveId=t.identifier; touch.moveOrigin={x:L.move.x,y:L.move.y};
-      const v=touchStick(touch.moveOrigin,hp,L.move.r*.4); touch.moveX=v.x; touch.moveY=v.y; continue;
+      updateTouchMove(hp,L);continue;
     }
     const b = touchButtonAt(hp.x,hp.y);
     if(b){
-      if(['attack','roll','skill','potion','spell'].includes(b)){
+      if(['attack','roll','jump','skill','potion','spell'].includes(b)){
         if(touch[b+'Id']!=null)continue;
         touch[b+'Id']=t.identifier;hudAction(b,true);
         if(b==='attack'){touch.aimId=t.identifier;touch.aimOrigin={x:L.attack.x,y:L.attack.y};}
@@ -1719,7 +1727,7 @@ function touchMove(e){
       const dx = p.x - TS.drag.x; TS.rot = TS.drag.rot + dx*0.012; TS.rotV = 0;
       continue;
     }
-    if(t.identifier===touch.moveId && touch.moveOrigin){ const v=touchStick(touch.moveOrigin,hp,touchLayout().move.r*.4); touch.moveX=v.x; touch.moveY=v.y; }
+    if(t.identifier===touch.moveId && touch.moveOrigin)updateTouchMove(hp);
     if(t.identifier===touch.aimId && touch.aimOrigin){ const v=touchStick(touch.aimOrigin,hp,58), power=Math.hypot(v.x,v.y); touch.aimPower=power; if(power>0.16){ touch.aimAngle=Math.atan2(v.y/SY,v.x/SX); touch.aimValid=true; } }
   }
 }
@@ -1729,11 +1737,12 @@ function touchEnd(e){
   for(const t of e.changedTouches){
     if(inventoryState.press?.id===t.identifier){inventoryEnd(t.identifier,t.clientX,t.clientY,e.type==='touchcancel');continue;}
     if(t.identifier===touch.titleId){ touch.titleId=null; if(TS.drag){ TS.drag=null; TS.rotV=0.4; } }
-    if(t.identifier===touch.moveId){ touch.moveId=null; touch.moveX=touch.moveY=0; touch.moveOrigin=null; }
+    if(t.identifier===touch.moveId){ touch.moveId=null; touch.moveX=touch.moveY=0; touch.moveOrigin=null; touch.run=false; }
     if(t.identifier===touch.aimId){ touch.aimId=null; touch.aimPower=0; touch.aimOrigin=null; }
     if(t.identifier===touch.attackId){ touch.attackId=null; touchAction('attack',false); }
     if(t.identifier===touch.bowId){ touch.bowId=null; touchAction('bow',false); }
     if(t.identifier===touch.rollId){touch.rollId=null;hudAction('roll',false);}
+    if(t.identifier===touch.jumpId)touch.jumpId=null;
     if(t.identifier===touch.spellId)touch.spellId=null;
     if(t.identifier===touch.skillId) touch.skillId=null;
     if(t.identifier===touch.potionId) touch.potionId=null;
@@ -2436,15 +2445,39 @@ function startingGear(){
   p.eq.weapon.weaponStyle = selectedWeaponStyle;
   p.weapon = kind; recalc(); p.hp = p.maxhp; p.mana = p.maxMana;
 }
-function pickupGear(){
-  const p = player; let best = null, bd = 1.4;
-  for(const g of items) if(g.type==='gear' && g.t>0.3){ const d = dist(g,p); if(d<bd){ bd = d; best = g; } }
-  if(!best) return false;
-  if(best.price && p.emeralds < best.price){ addText(p.x,p.y,1.6,`绿宝石不足（需要 ${best.price}）`,'#ff6a6a',0.9); return true; }
-  if(!addToBag(best.it)){ addText(p.x,p.y,1.6,'背包已满','#ff6a6a',0.9); return true; }
-  if(best.price){ p.emeralds -= best.price; addText(p.x,p.y,2.0,`购买 -${best.price} 绿宝石`,'#7affaa',0.9); }
-  best.dead = true; recalc();
-  addText(p.x,p.y,1.6, itemName(best.it), itemColor(best.it), 0.9);
+function nearbyGear(mobile=false){
+  return items.filter(g=>g.type==='gear'&&!g.dead&&g.t>.3&&dist(g,player)<1.4&&(!mobile||los(player,g)))
+    .sort((a,b)=>dist(a,player)-dist(b,player));
+}
+function mobileLootTargets(){
+  const near=nearbyGear(true),free=near.filter(g=>!g.price);
+  return free.length?free:near.slice(0,1);
+}
+function mobileInteraction(){
+  if(state!=='play'||!player)return {visible:false,label:'交互'};
+  const disabled=!grounded()||!CombatRules.canSwap(player),f=journeyTarget();
+  if(f&&(f.kind==='portal'||!['lit','spent'].includes(f.phase)&&!(f.kind==='shrine'&&f.phase==='complete')))
+    return {visible:true,label:journeyActionLabel(),detail:DungeonJourney.prompt(journey,f),disabled};
+  if(exitOpen&&dist(exitPos,player)<1)return {visible:true,label:'进入下一层',detail:'出口已开启',disabled};
+  const targets=mobileLootTargets(),first=targets[0];
+  if(first)return {visible:true,label:first.price?`购买 · ${first.price} 绿宝石`:targets.length>1?`拾取附近 · ${targets.length} 件`:'拾取',
+    detail:itemName(first.it),disabled:disabled||!!first.price&&player.emeralds<first.price};
+  if(exitOpen&&dist(exitPos,player)<1.3)return {visible:true,label:'进入下一层',detail:'出口已开启',disabled};
+  return {visible:false,label:'交互'};
+}
+function pickupGear(mobile=false){
+  const p=player,targets=mobile?mobileLootTargets():nearbyGear().slice(0,1);
+  if(!targets.length)return false;
+  let count=0,full=false;
+  for(const g of targets){
+    if(g.price&&p.emeralds<g.price){addText(p.x,p.y,1.6,`绿宝石不足（需要 ${g.price}）`,'#ff6a6a',.9);return true;}
+    if(!addToBag(g.it)){full=true;continue;}
+    if(g.price){p.emeralds-=g.price;addText(p.x,p.y,2,`购买 -${g.price} 绿宝石`,'#7affaa',.9);}
+    g.dead=true;count++;
+  }
+  if(count)recalc();
+  const first=targets[0],message=full?(count?`拾取 ${count} 件 · 背包已满`:'背包已满'):count>1?`拾取 ${count} 件装备`:itemName(first.it);
+  addText(p.x,p.y,1.6,message,full?'#ff6a6a':itemColor(first.it),.9);
   return true;
 }
 
@@ -2595,14 +2628,14 @@ function drawItemIcon(it, x, y, w, h, alpha=1){
 function drawBag(){ inventoryDraw(); }
 function drawGroundLabels(){
   const p = player, showAll = keys.AltLeft || keys.AltRight; let near = null, nd = 1.4;
-  for(const g of items) if(g.type==='gear' && g.t>0.3){ const d = dist(g,p); if(d<nd){ nd = d; near = g; } }
+  for(const g of items) if(g.type==='gear' && !g.dead && g.t>0.3){ const d = dist(g,p); if(d<nd){ nd = d; near = g; } }
   const placed = [];
   for(const g of items){
-    if(g.type!=='gear') continue; const d = dist(g,p); if(d > (g.price?3.5:5.5) && !showAll) continue;
+    if(g.type!=='gear'||g.dead) continue; const d = dist(g,p); if(d > (g.price?3.5:5.5) && !showAll) continue;
     const s = P(g.x, g.y, 0.9); let y = s[1];
     for(const q of placed) if(Math.abs(q[0]-s[0])<70 && Math.abs(q[1]-y)<18) y = q[1]-20;
     placed.push([s[0], y]);
-    const name = itemName(g.it) + (g.price ? `  💎${g.price}` : '') + (g===near ? (g.price ? '  [F 购买]' : '  [F]') : '');
+    const name = itemName(g.it) + (g.price ? `  💎${g.price}` : '') + (g===near ? (touchUIEnabled()?'  轻点右下角':g.price?'  [F 购买]':'  [F]') : '');
     ctx.font = 'bold 12px "Microsoft YaHei",sans-serif'; const w = ctx.measureText(name).width + 12;
     ctx.fillStyle = g===near ? 'rgba(40,40,60,.9)' : 'rgba(0,0,0,.7)'; ctx.fillRect(s[0]-w/2, y-9, w, 18);
     ctx.fillStyle = itemColor(g.it); ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(name, s[0], y);
@@ -3132,7 +3165,7 @@ function interact(){
   if(state!=='play'||!grounded()||!CombatRules.canSwap(p))return;
   if(journeyInteract())return;
   if(exitOpen && dist(exitPos,p)<1.0){ state = 'upgrade'; upgradeChoices = rollUpgrades(); return; }
-  if(pickupGear()) return;
+  if(pickupGear(touchUIEnabled())) return;
   if(exitOpen && dist(exitPos,p)<1.3){ state = 'upgrade'; upgradeChoices = rollUpgrades(); }
 }
 function rollUpgrades(){

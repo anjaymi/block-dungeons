@@ -9,13 +9,17 @@ function refreshHUDSafe(){
   for(const side of ['left','right','top','bottom'])hudSafe[side]=parseFloat(css.getPropertyValue('--safe-'+side))||0;
 }
 addEventListener('resize',refreshHUDSafe);refreshHUDSafe();
-function hudLayout(){return HUDLayout.layout(cv.width,cv.height,touchUIEnabled(),hudSafe);}
+function hudLayout(){
+  const layout=HUDLayout.layout(cv.width,cv.height,touchUIEnabled(),hudSafe);
+  if(layout.mobile)layout.buttons.interact.hidden=!mobileInteraction().visible;
+  return layout;
+}
 function hudPoint(x,y){return HUDLayout.point(hudLayout(),x,y);}
 function releaseHUDInput(){
   UIMotion.releaseAll();
   mouse.l=mouse.r=false;player.buf=null;
   for(const k in keys)keys[k]=false;
-  for(const k of ['moveId','aimId','attackId','bowId','rollId','skillId','potionId','runId','spellId'])touch[k]=null;
+  for(const k of ['moveId','aimId','attackId','bowId','rollId','jumpId','skillId','potionId','runId','spellId'])touch[k]=null;
   touch.moveX=touch.moveY=0;touch.moveOrigin=touch.aimOrigin=null;touch.run=false;touch.aimPower=0;hudMouseAction=null;
   if(weaponGameplay)weaponGameplay.cancelInput();
 }
@@ -34,7 +38,7 @@ function hudModalData(){
     for(const id of Object.keys(RESONANCE)){const R=RESONANCE[id];lines.push(`${R.n} · ${resonanceEnabled(id)?'已激活':resonanceProgress(id)+'/2'} · ${R.d}`);}
     return {kind:'quest',title:'地牢任务',lines};
   }
-  if(hudModal.kind==='more')return {kind:'more',title:'战斗快捷操作',items:['bow','spell','art0','art1','art2','swap','jump','skill','potion'].map(action=>({...hudActionData(action),action}))};
+  if(hudModal.kind==='more')return {kind:'more',title:'战斗快捷操作',items:['art0','art1','art2','bow','swap'].map(action=>({...hudActionData(action),action}))};
   return {kind:'settings',title:'设置与菜单',items:[
     {action:'fullscreen',icon:'compass',label:GameDisplay.status().label},
     {action:'mute',icon:'settings',label:window.SFX?.muted?'开启声音':'静音'},
@@ -53,18 +57,18 @@ function hudActionData(action){
   if(action==='potion')return {...base,icon:touchUIEnabled()?'potion':'potionGreen',label:'药水',cd:Math.max(0,p.potCD),full:18*(1-.3*L('potion')),disabled:p.hp>=p.maxhp};
   if(action==='roll')return {...base,label:'翻滚',cd:Math.max(0,p.rollCD),full:1.05*(1-.3*L('dodge')),disabled:p.sta<STA_ROLL*.5};
   if(/^art[0-2]$/.test(action)){const i=+action.at(-1),A=ARTS[i];return {...base,label:A.n,cd:Math.max(0,p.artCD[i]),full:A.cd*(1-.25*L('artcd')),cost:A.cost||0,disabled:!!A.cost&&p.souls<A.cost};}
-  if(action==='interact')return {...base,label:journeyActionLabel()};
+  if(action==='interact')return {...base,...(touchUIEnabled()?mobileInteraction():{label:journeyActionLabel()})};
   return {...base,label:({attack:'普通攻击',jump:'跳跃',bow:'弓箭',swap:'换组',interact:'交互',bag:'背包',quest:'任务',settings:'设置',more:'更多'})[action]||action};
 }
 function hudAction(action,down=true){
-  if(!down){if(action==='attack')mouse.l=false;if(action==='bow')mouse.r=false;if(action==='roll')touch.run=false;return;}
+  if(!down){if(action==='attack')mouse.l=false;if(action==='bow')mouse.r=false;return;}
   if(state!=='play')return;
   UIMotion.pulse('hud:'+action);
   if(['quest','settings','more'].includes(action)){openHUDModal(action);return;}
   if(action==='bag'){requestBag();return;}
   if(action==='map'){releaseHUDInput();state='map';return;}
   if(action==='attack'||action==='bow'){touchAction(action,true);return;}
-  if(action==='roll'){touch.run=true;touchAction('roll',true);return;}
+  if(action==='roll'){touchAction('roll',true);return;}
   if(action==='skill'){useClassSkill();return;}
   if(action==='potion'){usePotion();return;}
   if(action==='interact'){interact();return;}
