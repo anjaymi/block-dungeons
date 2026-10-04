@@ -25,6 +25,7 @@ function loadGame(options = {}) {
   sandbox.CrowdGrid=require(path.join(root,'crowd-grid.js'));
   sandbox.CombatMotion=require(path.join(root,'combat-motion.js'));
   const context = vm.createContext(sandbox);
+  vm.runInContext(fs.readFileSync(path.join(root,'game-display.js'),'utf8'),context,{filename:'game-display.js'});
   vm.runInContext(fs.readFileSync(path.join(root,'ui-motion.js'),'utf8'),context,{filename:'ui-motion.js'});
   vm.runInContext(fs.readFileSync(path.join(root,'hud-controller.js'),'utf8'),context,{filename:'hud-controller.js'});
   vm.runInContext(fs.readFileSync(path.join(root,'dungeon-journey-runtime.js'),'utf8'),context,{filename:'dungeon-journey-runtime.js'});

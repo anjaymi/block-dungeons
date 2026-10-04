@@ -16,6 +16,9 @@
 !/voxmobs.js
 !/weapon-models.js
 !/world3d.js
+!/game-display.js
+!/game.webmanifest
+!/game-icon.svg
 !/sfx.js
 !/combat-rules.js
 !/crowd-grid.js

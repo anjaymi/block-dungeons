@@ -3,16 +3,33 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,maximum-scale=1,user-scalable=no">
+<meta name="theme-color" content="#0a0d14">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="方块地牢">
+<link rel="manifest" href="game.webmanifest">
+<link rel="icon" href="game-icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="assets/hud/icons/attack.png">
 <title>方块地牢 · Block Dungeons</title>
 <style>
   html,body{margin:0;height:100%;background:#000;overflow:hidden;cursor:none;user-select:none;touch-action:none;overscroll-behavior:none}
   canvas{display:block;width:100vw;height:100vh;touch-action:none}
   :root{--safe-top:env(safe-area-inset-top,0px);--safe-right:env(safe-area-inset-right,0px);--safe-bottom:env(safe-area-inset-bottom,0px);--safe-left:env(safe-area-inset-left,0px)}
   @media (pointer:coarse){html,body{cursor:default}}
+  html,body{width:100%;height:100dvh}html:fullscreen,html:-webkit-full-screen{background:#0a0d14}
+  #game-fullscreen{position:fixed;z-index:5;display:flex;align-items:center;justify-content:center;gap:6px;min-width:104px;height:44px;box-sizing:border-box;padding:8px;color:#ffe3a6;background:#171521;border:1px solid #ac8755;border-radius:5px;font:600 13px "Microsoft YaHei","PingFang SC",sans-serif;cursor:pointer;touch-action:manipulation;-webkit-tap-highlight-color:transparent}
+  #game-fullscreen svg{width:20px;height:20px;flex:none}#game-fullscreen.compact{min-width:44px;width:44px;padding:3px;flex-direction:column;gap:1px;font-size:10px}#game-fullscreen.compact svg{width:18px;height:18px}
+  #game-fullscreen:active{background:#493725}#game-fullscreen:disabled{color:#c7c0aa;border-color:#706959;cursor:default}#game-fullscreen:focus-visible,#fullscreen-help-close:focus-visible{outline:2px solid #ffe3a6;outline-offset:3px}
+  #fullscreen-help{position:fixed;z-index:6;bottom:max(12px,env(safe-area-inset-bottom));left:50%;transform:translateX(-50%);box-sizing:border-box;width:min(420px,calc(100% - 32px - env(safe-area-inset-left) - env(safe-area-inset-right)));padding:16px;color:#f3e8d4;background:#171521;border:1px solid #ac8755;border-radius:5px;font:14px/1.6 "Microsoft YaHei","PingFang SC",sans-serif}
+  #fullscreen-help strong{color:#ffe3a6;font-size:16px}#fullscreen-help p{margin:8px 0 12px}#fullscreen-help-close{min-height:44px;padding:8px 20px;color:#ffe3a6;background:#33291e;border:1px solid #ac8755;border-radius:4px;font:inherit;cursor:pointer;touch-action:manipulation}
+  #game-fullscreen[hidden],#fullscreen-help[hidden]{display:none}
 </style>
 </head>
 <body>
 <canvas id="c"></canvas>
+<button id="game-fullscreen" type="button" aria-label="全屏游戏" aria-pressed="false" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M9 3H3v6m12-6h6v6M3 15v6h6m12-6v6h-6"/></svg><span>全屏游戏</span></button>
+<aside id="fullscreen-help" role="status" hidden><strong id="fullscreen-help-title"></strong><p id="fullscreen-help-message"></p><button id="fullscreen-help-close" type="button">知道了</button></aside>
+<script src="game-display.js?v=1"></script>
 <!-- 3D 体素地形层（方块暗黑破坏神资源）：缺失时自动回退纯 2D -->
 <script src="vendor/voxel-world.js"></script>
 <script src="scene-style.js?v=1"></script>
@@ -22,7 +39,7 @@
 <script src="scene-assets.js?v=4"></script>
 <script src="stone-material.js?v=1"></script>
 <script src="actor-batch.js?v=2"></script>
-<script src="world3d.js?v=25"></script>
+<script src="world3d.js?v=26"></script>
 <script src="voxmobs.js?v=4"></script>
 <script src="weapon-models.js?v=4.0.2"></script>
 <script src="scenefx.js?v=6"></script>
@@ -30,7 +47,7 @@
 <script src="ui-motion.js?v=1"></script>
 <script src="hud-layout.js?v=1"></script>
 <script src="fantasy-hud.js?v=3"></script>
-<script src="hud-controller.js?v=3"></script>
+<script src="hud-controller.js?v=4"></script>
 <script src="inventory-layout.js?v=1"></script>
 <script src="inventory-assets.js?v=2"></script>
 <script src="inventory-controller.js?v=2"></script>
@@ -48,11 +65,11 @@ const cv = document.getElementById('c');
 let ctx = cv.getContext('2d');
 const lc = document.createElement('canvas'), lctx = lc.getContext('2d');
 let VW = 0, VH = 0;
-function resize(){ VW = cv.width = lc.width = innerWidth; VH = cv.height = lc.height = innerHeight; }
+function resize(){ const size=GameDisplay.viewport(); VW=cv.width=lc.width=size.width; VH=cv.height=lc.height=size.height; if(cv.style){cv.style.width=VW+'px';cv.style.height=VH+'px';} }
 addEventListener('resize', resize); resize();
 if(window.visualViewport) visualViewport.addEventListener('resize', ()=>dispatchEvent(new Event('resize')));
 // 兜底：窗口最大化 / 浏览器缩放 / 跨显示器拖动时偶尔收不到 resize，逐帧校验尺寸，不一致就同步（含 3D 层）
-function ensureSize(){ if(cv.width !== innerWidth || cv.height !== innerHeight) dispatchEvent(new Event('resize')); }
+function ensureSize(){ const size=GameDisplay.viewport(); if(cv.width!==size.width||cv.height!==size.height)dispatchEvent(new Event('resize')); }
 
 const SX = 44, SY = 32, SZ = 38, HW = SX/1.35, HH = SY/1.35, TZ = SZ, VZ = SY/SZ;   // 3/4 俯视投影（恶果之地式）；VZ 为深度排序用的视线 z 分量
 const STEP = 1/120;                              // 固定物理步长 120Hz
@@ -5641,8 +5658,15 @@ function drawWeaponBranchCue(){
 }
 if(weaponGameplay){ selW=Math.max(0,START_W.indexOf(labQuery.get('weapon')||'greatsword')); selK=0; titleGo('loadout'); }
 let last = performance.now(), acc = 0, fps = 60;
+let displayPaused=false;
+GameDisplay.mount({mobile:touchUIEnabled,onRequest:releaseHUDInput,onChange:releaseHUDInput,onNotice:visible=>{
+  if(visible&&state==='play'){displayPaused=true;state='pause';}
+  else if(!visible&&displayPaused){displayPaused=false;if(state==='pause'&&!hudModal)state='play';}
+}});
 function loop(now){
   ensureSize();
+  const displayLayout=hudLayout(),displayMap=displayLayout.map;
+  GameDisplay.present({mobile:touchUIEnabled(),hidden:!!hudModal||state==='bag'||state==='map',compact:state!=='title',top:state==='title'?hudSafe.top+12:hudSafe.top+displayMap.y*displayLayout.scale+2,right:state==='title'?hudSafe.right+12:Math.max(hudSafe.right+8,cv.width-hudSafe.left-(displayMap.x+displayMap.w)*displayLayout.scale+2)});
   if(weaponGameplay) weaponGameplay.sync();
   reportWeaponLab();
   const frame = Math.min(0.1, (now-last)/1000); last = now;

@@ -36,7 +36,7 @@ function hudModalData(){
   }
   if(hudModal.kind==='more')return {kind:'more',title:'战斗快捷操作',items:['bow','spell','art0','art1','art2','swap','jump','skill','potion'].map(action=>({...hudActionData(action),action}))};
   return {kind:'settings',title:'设置与菜单',items:[
-    {action:'fullscreen',icon:'compass',label:document.fullscreenElement?'退出全屏':'全屏游戏'},
+    {action:'fullscreen',icon:'compass',label:GameDisplay.status().label},
     {action:'mute',icon:'settings',label:window.SFX?.muted?'开启声音':'静音'},
     {action:'quiet',icon:'settings',label:'音量 −'},
     {action:'loud',icon:'settings',label:'音量 ＋'},
@@ -86,8 +86,7 @@ function hudModalClick(x,y){
     else if(action==='quiet')window.SFX?.setVol(SFX.vol-.1);
     else if(action==='loud')window.SFX?.setVol(SFX.vol+.1);
     else if(action==='fullscreen'){
-      const p=document.fullscreenElement?document.exitFullscreen?.():cv.requestFullscreen?.();
-      if(p&&p.catch)p.catch(()=>{});
+      releaseHUDInput();GameDisplay.toggle({landscape:touchUIEnabled()});
     }else if(action.startsWith('hud')){hudMode={hudpc:'pc',hudmobile:'mobile',hudauto:'auto'}[action];releaseHUDInput();}
     return;
   }

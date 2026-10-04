@@ -20,7 +20,7 @@
   <div class="top"><h1>武器实验室<span>方块地牢 · 玩法原型</span></h1><nav aria-label="选择实验武器"><button data-weapon="greatsword" aria-pressed="true">巨剑</button><button data-weapon="sickles" aria-pressed="false">双镰</button><button data-weapon="hammer" aria-pressed="false">战锤</button></nav><nav class="layout-choice" aria-label="界面布局"><button data-hud="auto" aria-pressed="true">自动</button><button data-hud="pc" aria-pressed="false">PC</button><button data-hud="mobile" aria-pressed="false">手机</button></nav><a href="block-dungeons.html">返回默认游戏 ↗</a></div>
   <p class="hint"><strong id="description">破阵重劈：放弃旋风，集中重劈前方。</strong> 第二击后松手约 0.14 秒，看到“变招就绪”再按攻击。<span id="feedback" aria-live="polite">按住攻击：基础连段 · 手机沿用攻击按钮</span></p>
 </header>
-<iframe id="game" title="方块地牢武器实验室" src="block-dungeons.html?weaponLab=1&amp;weapon=greatsword&amp;session=1" allow="autoplay"></iframe>
+<iframe id="game" title="方块地牢武器实验室" src="block-dungeons.html?weaponLab=1&amp;weapon=greatsword&amp;session=1" allow="autoplay; fullscreen" allowfullscreen></iframe>
 <dialog id="restart"><h2>重新选择实验武器？</h2><p>当前冒险会结束，并回到新武器的准备界面。</p><div><button id="cancel">继续当前冒险</button><button id="confirm">重新选择</button></div></dialog>
 <script>
   const game=document.getElementById('game'), dialog=document.getElementById('restart');

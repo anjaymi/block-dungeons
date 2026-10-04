@@ -413,7 +413,8 @@ function init(){
 }
 function resize(){
   if(!renderer) return;
-  W = innerWidth; H = innerHeight; PR = Math.min(devicePixelRatio || 1, PR_CAP);
+  const size=window.GameDisplay?GameDisplay.viewport():{width:innerWidth,height:innerHeight};
+  W = size.width; H = size.height; PR = Math.min(devicePixelRatio || 1, PR_CAP);
   renderer.setPixelRatio(PR); renderer.setSize(W, H, true);
   wl.width = Math.round(W*PR); wl.height = Math.round(H*PR);
 }

@@ -1,0 +1,14 @@
+{
+  "id": "./",
+  "name": "方块地牢 · Block Dungeons",
+  "short_name": "方块地牢",
+  "lang": "zh-CN",
+  "start_url": "./block-dungeons.html",
+  "scope": "./",
+  "display": "fullscreen",
+  "display_override": ["fullscreen", "standalone"],
+  "orientation": "landscape",
+  "background_color": "#0a0d14",
+  "theme_color": "#0a0d14",
+  "icons": [{ "src": "game-icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" }]
+}
