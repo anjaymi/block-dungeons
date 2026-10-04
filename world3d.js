@@ -2,7 +2,7 @@
 //  World3D —— Three.js 体素地形层（方块暗黑破坏神资源 → 暗黑肉鸽）
 //  - 地面 / 墙体 / 火把 / 场景道具全部换成 3D 体素模型（vendor/voxel-world.js）
 //  - 相机投影矩阵与游戏 2D 投影 P(x,y,z) 逐像素对齐（仍是 2D 俯视角）
-//  - 角色、特效、UI 仍由原 2D 画布绘制，叠在 WebGL 画布之上
+//  - 角色合批绘入独立图集，再由 Canvas 按原顺序合成；特效与 UI 保留 2D
 //  - 遮挡：墙/道具额外渲染到一张透明“遮挡层”，按原画家算法顺序贴回 2D 画布
 //  依赖：window.THREE, window.VOXLIB；失败时 init() 返回 false，游戏回退到纯 2D
 // =====================================================================
@@ -21,6 +21,32 @@ const uTime = {value: 0};
 let glowSpots = [];
 const SHADOW_LAYER = 2, MAX_SHADOW_BOXES = 8000;
 let shadowProxy = null, shN = 0, shRec = false;
+let actors=null, capturing=false, actorsRendered=false;
+const capturedActors=new Set();
+// Three uses random UUIDs for graphics objects. Keep those draws outside the
+// gameplay sequence, including when a replay supplies its own seeded random.
+let graphicsSeed=0x4e554d42;
+const graphicsRandom=()=>{graphicsSeed^=graphicsSeed<<13;graphicsSeed^=graphicsSeed>>>17;graphicsSeed^=graphicsSeed<<5;return (graphicsSeed>>>0)/4294967296;};
+function beginActorCapture(images,G){
+  capturing=false;actorsRendered=false;capturedActors.clear();
+  if(!init()||glLost||glFailG===G||!window.ActorBatch)return false;
+  const gameRandom=Math.random;Math.random=graphicsRandom;
+  try{
+    if(!actors){if(renderer.capabilities.maxAttributes<16)return false;actors=new ActorBatch(T);}
+    if(actors.failed||actors.lost||!actors.setImages(images))return false;
+    actors.begin();capturing=true;return true;
+  }catch(e){if(actors)actors.disable(e);console.warn('[World3D] 角色合批回退 2D：',e);return false;}
+  finally{Math.random=gameRandom;}
+}
+function captureRig(e,boxes,k,z0,ground,alpha,ctx){
+  if(capturing){actors.add(e,boxes,k,z0,ground,alpha);capturedActors.add(e);return true;}
+  return actorsRendered&&capturedActors.has(e)&&actors.paint(e,ctx);
+}
+function endActorCapture(error){
+  capturing=false;
+  if(error){actors.disable(error);capturedActors.clear();console.warn('[World3D] 角色合批回退 2D：',error);}
+  // Upload follows atlas placement in frameInner().
+}
 
 // ---------------------------------------------------------------------
 //  主题 → 3D 资源配置
@@ -35,16 +61,16 @@ let shadowProxy = null, shN = 0, shRec = false;
 // ---------------------------------------------------------------------
 const THEME3D = {
   '苔石地牢': {
-    floors:[['dungeon','stone_floor',5],['dungeon','mossy_floor',3],['dungeon','cracked_floor',2],['dungeon','brick_floor',1]],
+    floors:[['scene','flagstone',7],['scene','split_flagstone',2],['scene','worn_flagstone',1]],
     wall:'dungeon', torch:['dungeon','wall_torch'],
     wallDeco:[['dungeon','wall_banner'],['dungeon','bookshelf']],
-    clutter:[['dungeon','bones_pile']],
-    obstacle:[['dungeon','pillar'],['dungeon','knight_statue'],['dungeon','sarcophagus'],['dungeon','crystal_cluster'],['dungeon','altar']],
+    clutter:[['dungeon','bones_pile'],['scene','rubble']],
+    obstacle:[['scene','pillar'],['dungeon','knight_statue'],['dungeon','sarcophagus'],['dungeon','crystal_cluster'],['dungeon','altar']],
     corner:[['dungeon','barrel'],['dungeon','vase'],['dungeon','crate'],['dungeon','brazier']],
-    light:{sky:0xb8c4e8, ground:0x3a3428, hemi:0.95, sun:0.95, torch:0xffa040},
+    light:{sky:0xa6b9d8, ground:0x2d3036, hemi:0.86, sun:0.88, torch:0xffa040, exposure:1.02},
   },
   '幽深矿井': {
-    floors:[['volcano','basalt_floor',3],['dungeon','cracked_floor',3],['dungeon','stone_floor',2]],
+    floors:[['scene','flagstone',7],['scene','split_flagstone',2],['scene','worn_flagstone',1]],
     wall:'mine', torch:['volcano','wall_torch'],
     wallDeco:[['volcano','hanging_banner']],
     clutter:[['dungeon','bones_pile']],
@@ -53,7 +79,7 @@ const THEME3D = {
     light:{sky:0xd8c0a0, ground:0x302418, hemi:0.9, sun:0.9, torch:0xffa848},
   },
   '冰封洞窟': {
-    floors:[['icefield','snow_tile',3],['icefield','frosted_stone',3],['icefield','packed_snow',2],['icefield','ice_floor',1]],
+    floors:[['scene','flagstone',7],['scene','split_flagstone',2],['scene','worn_flagstone',1]],
     wall:'ice', torch:['icefield','wall_torch'],
     wallDeco:[['icefield','hanging_banner']],
     clutter:[['icefield','snow_flowers'],['icefield','frozen_bush']],
@@ -62,7 +88,7 @@ const THEME3D = {
     light:{sky:0xd0e8ff, ground:0x50607a, hemi:1.0, sun:0.95, torch:0xffb060},
   },
   '下界要塞': {
-    floors:[['volcano','obsidian_floor',3],['volcano','cracked_basalt',3],['volcano','basalt_floor',2],['volcano','magma_brick',1]],
+    floors:[['scene','flagstone',7],['scene','split_flagstone',2],['scene','worn_flagstone',1]],
     wall:'nether', torch:['volcano','wall_torch'],
     wallDeco:[['volcano','hanging_banner']],
     clutter:[['volcano','ember_flowers'],['volcano','ash_bush']],
@@ -71,7 +97,7 @@ const THEME3D = {
     light:{sky:0xffb090, ground:0x401010, hemi:0.85, sun:0.85, torch:0xff7a30},
   },
   '沙海遗迹': {
-    floors:[['desert','sand_tile',3],['desert','cracked_sandstone',3],['desert','packed_sand',2],['desert','mosaic_tile',1]],
+    floors:[['scene','flagstone',7],['scene','split_flagstone',2],['scene','worn_flagstone',1]],
     wall:'desert', torch:['desert','wall_torch'],
     wallDeco:[['desert','hanging_banner']],
     clutter:[['desert','desert_flowers'],['desert','dry_bush']],
@@ -88,9 +114,15 @@ const FALLBACK_THEME = '苔石地牢';
 const WALL_BUILDERS = {
   dungeon(v, L, h, k){ const P = L.dungeon.P;
     P.masonry(v,-12,-12,0,24,24,h);
-    for(let x=-12;x<12;x+=8) P.stone(v,x,-12,h,8,24,2,k);
+    // 屋顶铺成小块压顶石；整条 24 体素长石会在俯视镜头里形成灰色条带。
+    v.box(-12,-12,h,24,24,2,0x414653);
+    for(let y=-12;y<12;y+=8) for(let x=-12;x<12;x+=8){
+      const c = P.D.stone[(k+(x+12)/8+(y+12)/8*2)%P.D.stone.length];
+      const dark = (Math.round((c>>16)*.72)<<16) | (Math.round(((c>>8)&255)*.75)<<8) | Math.round((c&255)*.8);
+      v.box(x+1,y+1,h,7,7,2,dark);
+    }
     if(k%3===1){ P.moss(v,-10+k%5,-13,2,5,2); P.moss(v,3,-13,h-9,4,2); }
-    if(k%3===2) P.moss(v,-6,-9,h+2,8,7);
+    if(k%3===2) buildMoss(v,k%3,-3,-4,h+2,.75);
   },
   mine(v, L, h, k){ const P = L.volcano.P;
     P.basalt(v,-12,-12,0,24,24,h,P.VC.basalt);
@@ -125,7 +157,7 @@ const WH_ORD = WALL_HEIGHTS.map((h,i)=>[h,i]).sort((a,b)=>a[0]-b[0]).map(x=>x[1]
 let T = null, L = null, ok = false, failed = false;
 let renderer, scene, camera, glc, wl, wlctx, mats;
 let hemi, sun, torchLights = [], playerLight, exitLight;
-let world = null, builtFor = null, builtTheme = null;
+let world = null, builtFor = null, builtTheme = null, builtTerrain = null;
 let glLost = false, glFailG = null, wlAlphaOK = null;   // wlAlphaOK：读回的透明背景是否真的透明（部分 Windows 驱动读回为不透明黑 → 墙体贴回会把地面盖黑）   // WebGL 上下文丢失 / 渲染异常 → 回退 2D，避免 3D 画布冻结在旧帧（两张地图叠在一起）
 let tileExt = null;          // Float32Array: 每格遮挡物高度（0 = 无遮挡物）
 let tileSouth = null;        // Float32Array: 每格遮挡物向南突出量
@@ -163,11 +195,17 @@ function extractParts(root){
   });
   return {parts, maxZ, south:maxS};
 }
-function assetParts(lib, id, seed){
-  const key = lib+'/'+id+'/'+seed;
+function assetParts(lib, id, seed, themeName=FALLBACK_THEME){
+  const key = lib+'/'+id+'/'+seed+(lib==='scene'?'/'+themeName:'');
   let p = partCache.get(key);
   if(!p){
-    try { p = extractParts(L[lib].create(id, seed)); }
+    try {
+      if(lib==='scene' && window.SceneAssets) p=SceneAssets.build(T,id,seed,28,themeName);
+      else {
+        const legacy={flagstone:'stone_floor',split_flagstone:'cracked_floor',worn_flagstone:'brick_floor',pillar:'pillar',rubble:'bones_pile'};
+        p=extractParts(lib==='scene' ? L.dungeon.create(legacy[id],seed) : L[lib].create(id,seed));
+      }
+    }
     catch(e){ console.warn('[World3D] asset failed', key, e); p = {parts:[], maxZ:0, south:0}; }
     partCache.set(key, p);
   }
@@ -178,7 +216,7 @@ function mergeBaked(items){
   let nv = 0;
   for(const [g] of items) nv += g.index ? g.index.count : g.attributes.position.count;
   if(!nv) return null;
-  const P = new Float32Array(nv*3), N = new Float32Array(nv*3), C = new Float32Array(nv*3);
+  const P = new Float32Array(nv*3), N = new Float32Array(nv*3), C = new Float32Array(nv*3), Ground = new Float32Array(nv);
   let o = 0;
   for(const [g, m] of items){
     const e = m.elements, pa = g.attributes.position.array, na = g.attributes.normal ? g.attributes.normal.array : null;
@@ -186,6 +224,7 @@ function mergeBaked(items){
     const idx = g.index ? g.index.array : null, cnt = idx ? idx.length : g.attributes.position.count;
     for(let n=0;n<cnt;n++){
       const v = idx ? idx[n] : n, x = pa[v*3], y = pa[v*3+1], z = pa[v*3+2];
+      Ground[o/3]=m.groundBase||0;
       P[o]   = e[0]*x + e[4]*y + e[8]*z  + e[12];
       P[o+1] = e[1]*x + e[5]*y + e[9]*z  + e[13];
       P[o+2] = e[2]*x + e[6]*y + e[10]*z + e[14];
@@ -193,7 +232,22 @@ function mergeBaked(items){
         let nx = e[0]*a + e[4]*b + e[8]*c, ny = e[1]*a + e[5]*b + e[9]*c, nz = e[2]*a + e[6]*b + e[10]*c;
         const l = Math.hypot(nx,ny,nz) || 1; N[o] = nx/l; N[o+1] = ny/l; N[o+2] = nz/l; }
       else N[o+2] = 1;
+      if(m.terrainFloor && window.DungeonMap){
+        const ground=DungeonMap.surfaceAt(m.terrainFloor,P[o],-P[o+1]);
+        P[o+2]+=ground.height-m.groundBase;
+        // Inverse transpose of z'=z+h(x,-y), preserving the stone bevel normals.
+        const nx=N[o]-ground.dx*N[o+2],ny=N[o+1]+ground.dy*N[o+2],nz=N[o+2],len=Math.hypot(nx,ny,nz)||1;
+        N[o]=nx/len;N[o+1]=ny/len;N[o+2]=nz/len;
+      }
+      if(m.foundation && window.DungeonMap){
+        P[o+2]=z>0?DungeonMap.heightAt(m.foundation,P[o],-P[o+1])+m.foundationTop:-.16;
+        if(N[o+2]>.5){const slope=DungeonMap.surfaceAt(m.foundation,P[o],-P[o+1]),len=Math.hypot(slope.dx,slope.dy,1);N[o]=-slope.dx/len;N[o+1]=slope.dy/len;N[o+2]=1/len;}
+      }
       if(ca){ C[o] = ca[v*cs]; C[o+1] = ca[v*cs+1]; C[o+2] = ca[v*cs+2]; } else { C[o] = C[o+1] = C[o+2] = 1; }
+      if(m.floorSurface && window.SceneStyle){
+        const shade = SceneStyle.floorShade(m.floorSurface,P[o],-P[o+1]);
+        C[o]*=shade[0]; C[o+1]*=shade[1]; C[o+2]*=shade[2];
+      }
       o += 3;
     }
   }
@@ -201,6 +255,7 @@ function mergeBaked(items){
   geo.setAttribute('position', new T.BufferAttribute(P, 3));
   geo.setAttribute('normal', new T.BufferAttribute(N, 3));
   geo.setAttribute('color', new T.BufferAttribute(C, 3));
+  geo.setAttribute('aGroundHeight', new T.BufferAttribute(Ground, 1));
   geo.computeBoundingSphere(); geo.computeBoundingBox();
   return geo;
 }
@@ -210,13 +265,36 @@ function avgColor(c){
   const m = Math.max(r,g,b)/k || 1;   // 归一化到最亮通道 = 1，作为辉光色
   return [r/k/m, g/k/m, b/k/m];
 }
+function styleMat(m){
+  m.onBeforeCompile = sh => {
+    sh.uniforms.uTime = uTime;
+    sh.vertexShader = 'uniform float uTime;\nvarying vec3 vStyleWp;\nvarying vec3 vStyleNormal;\n' + sh.vertexShader.replace('#include <begin_vertex>', `#include <begin_vertex>
+      vec4 stylePosition = vec4(transformed, 1.0);
+      #ifdef USE_INSTANCING
+        stylePosition = instanceMatrix * stylePosition;
+      #endif
+      vStyleWp = (modelMatrix * stylePosition).xyz;
+      vStyleNormal = normalize(transformedNormal);`);
+    sh.fragmentShader = 'uniform float uTime;\nvarying vec3 vStyleWp;\nvarying vec3 vStyleNormal;\n' + sh.fragmentShader.replace('#include <color_fragment>', `#include <color_fragment>
+      // 低强度的边缘辉光：让体素轮廓在阴影里仍保留魔法感，不改变原有材质颜色。
+      // 本项目使用固定正交投影；Lambert 不提供 vViewPosition。
+      float styleFacing = abs(dot(normalize(vStyleNormal), normalize(vec3(0.0, -38.0, 32.0))));
+      float styleRim = pow(1.0 - styleFacing, 3.2);
+      float stylePulse = 0.72 + 0.28 * sin(uTime * 1.15 + vStyleWp.x * 0.18 + vStyleWp.y * 0.13);
+      diffuseColor.rgb += vec3(0.035, 0.075, 0.11) * styleRim * stylePulse;
+      diffuseColor.rgb *= 0.985 + 0.015 * sin(uTime * 0.7 + vStyleWp.x * 0.08 - vStyleWp.y * 0.06);`);
+  };
+  m.customProgramCacheKey = () => 'style-rim-v2';
+  return m;
+}
+
 // 给材质注入时间动画（世界坐标相位，静态合批网格的 modelMatrix = 单位阵）
 function animMat(m, mode){
   m.onBeforeCompile = sh => {
     sh.uniforms.uTime = uTime;
-    sh.vertexShader = 'uniform float uTime;\nvarying vec3 vWp;\n' + sh.vertexShader.replace('#include <begin_vertex>', `#include <begin_vertex>
+    sh.vertexShader = (mode==='sway'?'attribute float aGroundHeight;\n':'')+'uniform float uTime;\nvarying vec3 vWp;\n' + sh.vertexShader.replace('#include <begin_vertex>', `#include <begin_vertex>
       vWp = (modelMatrix * vec4(transformed, 1.0)).xyz;
-      ${mode==='sway' ? 'float sw = max(transformed.z, 0.0); transformed.x += sin(uTime*1.6 + vWp.x*1.3 + vWp.y*0.7)*0.035*sw; transformed.y += cos(uTime*1.3 + vWp.x*0.6 + vWp.y*1.1)*0.025*sw;' : ''}
+      ${mode==='sway' ? 'float sw = max(transformed.z-aGroundHeight, 0.0); transformed.x += sin(uTime*1.6 + vWp.x*1.3 + vWp.y*0.7)*0.035*sw; transformed.y += cos(uTime*1.3 + vWp.x*0.6 + vWp.y*1.1)*0.025*sw;' : ''}
       ${mode==='water' ? 'transformed.z += sin(uTime*2.0 + vWp.x*3.1 + vWp.y*2.3)*0.012;' : ''}`);
     sh.fragmentShader = 'uniform float uTime;\nvarying vec3 vWp;\n' + sh.fragmentShader.replace('#include <color_fragment>', `#include <color_fragment>
       ${mode==='glow' ? 'float br = 0.82 + 0.22*sin(uTime*1.7 + vWp.x*1.1 + vWp.y*0.8) + 0.08*sin(uTime*5.3 + vWp.x*4.0 - vWp.y*3.0); diffuseColor.rgb *= br; diffuseColor.rgb += diffuseColor.rgb*diffuseColor.rgb*0.25*(br-0.8);' : ''}
@@ -231,10 +309,41 @@ function wallParts(kind, k){
   const key = 'wall/'+kind+'/'+k;
   let p = partCache.get(key);
   if(!p){
-    const v = new L.DungeonModel(101 + k*17), h = WALL_HEIGHTS[k % WALL_HEIGHTS.length];
-    (WALL_BUILDERS[kind] || WALL_BUILDERS.dungeon)(v, L, h, k);
-    p = extractParts(v.build(key)); partCache.set(key, p);
+    const h = WALL_HEIGHTS[k % WALL_HEIGHTS.length];
+    if(window.SceneAssets) p=SceneAssets.build(T,'wall',k,h,Object.keys(THEME3D).find(name=>THEME3D[name].wall===kind)||FALLBACK_THEME);
+    else {
+      const v = new L.DungeonModel(101 + k*17);
+      (WALL_BUILDERS[kind] || WALL_BUILDERS.dungeon)(v, L, h, k);
+      p=extractParts(v.build(key));
+    }
+    partCache.set(key,p);
   }
+  return p;
+}
+
+// A low, irregular cushion and a few feathered fronds, rather than green cubes.
+// Canonical footprint stays inside radius 8 voxels; instances share three meshes.
+function buildMoss(v,variant,ox=0,oy=0,oz=0,scale=1){
+  const colors=[0x35473d,0x455746,0x56674b,0x64754f];
+  const cell=(x,y,z,w,d,h,c)=>v.box(Math.round(ox+x*scale),Math.round(oy+y*scale),oz+Math.round(z*scale),Math.max(1,Math.round(w*scale)),Math.max(1,Math.round(d*scale)),Math.max(1,Math.round(h*scale)),c);
+  for(let y=-7;y<=7;y++)for(let x=-7;x<=7;x++){
+    const lobes=Math.min(Math.hypot(x+2,y+1)-4.8,Math.hypot(x-2,y-2)-4.2,Math.hypot(x-1,y+3)-3.5);
+    if(lobes>0||Math.hypot(x+.5,y+.5)>7.25||h32(x,y,variant+91)<.10)continue;
+    cell(x,y,0,1,1,1,colors[(h32(x,y,variant+93)*3)|0]);
+  }
+  if(variant===0)return;
+  for(let stem=0;stem<3;stem++){
+    const x=-3+stem*3,y=(stem===1?-2:1),height=variant===2?6-stem:3+stem%2;
+    cell(x,y,1,1,1,height,colors[1]);
+    for(let z=2;z<height;z+=2){
+      const reach=Math.max(1,Math.min(3,height-z));
+      cell(x-reach,y,z,reach,1,1,colors[2]);cell(x+1,y,z+1,reach,1,1,colors[3]);
+    }
+  }
+}
+function mossParts(variant){
+  const key='ground-moss/'+variant;let p=partCache.get(key);
+  if(!p){const v=new L.DungeonModel(137+variant);buildMoss(v,variant);p=extractParts(v.build(key));partCache.set(key,p);}
   return p;
 }
 
@@ -252,19 +361,25 @@ function init(){
     glc.style.zIndex = '0'; cv.style.zIndex = '1'; glc.style.pointerEvents = 'none';
     cv.parentNode.insertBefore(glc, cv);
     renderer = new T.WebGLRenderer({canvas:glc, antialias:true, alpha:true, powerPreference:'high-performance'});
+    // Three 默认只记录编译错误；让 frame() 捕获它并通知主画布回退。
+    renderer.debug.onShaderError = (gl, program, vertexShader, fragmentShader) => {
+      const detail = [gl.getProgramInfoLog(program), gl.getShaderInfoLog(vertexShader), gl.getShaderInfoLog(fragmentShader)].filter(Boolean).join('\n');
+      throw new Error('[World3D] shader 编译失败：' + detail);
+    };
     // 统一 Three 与 Canvas 的色彩空间，避免 3D 地面/墙体在高分屏上发灰；新旧 Three 版本均兼容。
     if(T.SRGBColorSpace && 'outputColorSpace' in renderer) renderer.outputColorSpace = T.SRGBColorSpace;
     else if(T.sRGBEncoding && 'outputEncoding' in renderer) renderer.outputEncoding = T.sRGBEncoding;
     if(T.ACESFilmicToneMapping !== undefined){ renderer.toneMapping = T.ACESFilmicToneMapping; renderer.toneMappingExposure = 1.08; }
     glc.addEventListener('webglcontextlost', e => { e.preventDefault(); glLost = true; glc.style.visibility = 'hidden'; console.warn('[World3D] WebGL 上下文丢失，暂时回退 2D'); }, false);
-    glc.addEventListener('webglcontextrestored', () => { glLost = false; builtFor = null; builtTheme = null; console.warn('[World3D] WebGL 上下文已恢复，重建场景'); }, false);
+    glc.addEventListener('webglcontextrestored', () => { glLost = false; glFailG = null; builtFor = null; builtTheme = null; wlAlphaOK = null; console.warn('[World3D] WebGL 上下文已恢复，重建场景'); }, false);
     renderer.sortObjects = true;
     renderer.shadowMap.enabled = true; renderer.shadowMap.type = T.PCFShadowMap; renderer.shadowMap.autoUpdate = false;
     wl = document.createElement('canvas'); wlctx = wl.getContext('2d');
     scene = new T.Scene();
     camera = new T.Camera(); camera.matrixAutoUpdate = false; camera.matrixWorldAutoUpdate = false;
     mats = {
-      solid: new T.MeshLambertMaterial({vertexColors:true}),
+      solid: styleMat(new T.MeshLambertMaterial({vertexColors:true})),
+      stone: window.StoneMaterial ? StoneMaterial.create(T) : new T.MeshLambertMaterial({vertexColors:true}),
       crystal: animMat(new T.MeshLambertMaterial({vertexColors:true, emissive:0x1a4f9a, emissiveIntensity:0.6}), 'crystal'),
       glow: animMat(new T.MeshBasicMaterial({vertexColors:true}), 'glow'),
       water: animMat(new T.MeshLambertMaterial({vertexColors:true, transparent:true, opacity:0.82, depthWrite:false}), 'water'),
@@ -319,7 +434,7 @@ function decorate(o){
     const tiles = r.tiles.slice().sort((a,b)=>h32(a[0],a[1],o.seed)-h32(b[0],b[1],o.seed));
     for(const [i,j] of tiles){
       if(placed >= want) break;
-      if(G[id(i,j)]!==1 || roomId[id(i,j)]!==r.id) continue;
+      if(G[id(i,j)]!==1 || roomId[id(i,j)]!==r.id || (o.protectedTiles && o.protectedTiles[id(i,j)])) continue;
       const n = solid(i-1,j)+solid(i+1,j)+solid(i,j-1)+solid(i,j+1);
       if(n < 2 || !(solid(i,j-1)||solid(i,j+1))) continue;          // 角落：至少两面贴墙
       if(Math.abs(i-r.cx)<3 || Math.abs(j-r.cy)<3) continue;
@@ -341,20 +456,27 @@ function build(o){
   if(world){ scene.remove(world); world.traverse(n=>{ if(n.isMesh && n.geometry) n.geometry.dispose(); }); }
   world = new T.Group(); scene.add(world);
   const {G, GW, GH, roomId, torches} = o, id = (i,j) => j*GW+i;
-  builtGW = GW;
+  builtGW = GW; builtTerrain=o.terrain||null;
+  const heightAt=(x,y)=>window.DungeonMap?DungeonMap.heightAt(builtTerrain,x,y):0;
   const cfg = THEME3D[o.theme && o.theme.name] || THEME3D[FALLBACK_THEME];
   const isF = (i,j) => i>=0&&j>=0&&i<GW&&j<GH&&G[id(i,j)]!==0;
   const solid = (i,j) => !isF(i,j);
   tileExt = new Float32Array(GW*GH); tileSouth = new Float32Array(GW*GH);
   const buckets = new Map();   // key -> {parts, occ, mats:{chunk -> Matrix4[]}}
   const m4 = new T.Matrix4(), q = new T.Quaternion(), zAxis = new T.Vector3(0,0,1), pos = new T.Vector3(), scl = new T.Vector3(1,1,1);
-  const put = (key, partsObj, occ, x, y, z, yaw=0, s=1) => {
+  const put = (key, partsObj, occ, x, y, z, yaw=0, s=1, surface=null) => {
     let b = buckets.get(key); if(!b){ b = {p:partsObj, occ, chunks:new Map()}; buckets.set(key, b); }
     const ck = ((y/CHUNK)|0)*1000 + ((x/CHUNK)|0);
     let arr = b.chunks.get(ck); if(!arr){ arr = []; b.chunks.set(ck, arr); }
-    q.setFromAxisAngle(zAxis, yaw); pos.set(x, -y, z); scl.set(s,s,s);
-    arr.push(m4.compose(pos, q, scl).clone());
+    q.setFromAxisAngle(zAxis, yaw); pos.set(x, -y, z+heightAt(x,y)); scl.set(s,s,s);
+    const instance=m4.compose(pos, q, scl).clone();instance.floorSurface=surface;instance.groundBase=heightAt(x,y);instance.isGround=key.startsWith('f/')||key==='support';if(key.startsWith('f/') && builtTerrain)instance.terrainFloor=builtTerrain;arr.push(instance);return instance;
   };
+  // One shared support box, baked with four terrain corner heights. Foundations
+  // extend to the common bedrock, so elevated rooms never float over the void.
+  const foundationGeo=new T.BoxGeometry(1,1,1),foundationColor=new T.Color((window.SceneAssets&&SceneAssets.palettes[o.theme.name]||{}).side||0x596575);
+  const foundationColors=new Float32Array(foundationGeo.attributes.position.count*3);for(let n=0;n<foundationColors.length;n+=3){foundationColors[n]=foundationColor.r*.78;foundationColors[n+1]=foundationColor.g*.78;foundationColors[n+2]=foundationColor.b*.78;}
+  foundationGeo.setAttribute('color',new T.BufferAttribute(foundationColors,3));const foundationParts={parts:[{geo:foundationGeo,kind:'stone'}]};
+  const support=(x,y,top)=>{if(!builtTerrain || heightAt(x,y)<.025)return;const m=put('support',foundationParts,false,x,y,0);m.foundation=builtTerrain;m.foundationTop=top;};
   const torchAt = new Set(torches.map(t=>id(t.i,t.j)));
   const seedOf = (i,j,salt) => 7 + ((h32(i,j,salt)*3)|0);
   // 地面成片：主地面占大头，次要材质成团出现，稀有材质只零星点缀
@@ -362,21 +484,32 @@ function build(o){
   const floorPick = (i,j) => {
     const v = fbm(i, j, 11), r = h32(i,j,14);
     if(FL.length > 2 && r < 0.04) return FL[2 + ((h32(i,j,15)*(FL.length-2))|0)];
-    if(FL.length > 1 && v > 0.6) return FL[1];
+    if(FL.length > 1 && v > (cfg.wall==='dungeon' ? .67 : .6)) return FL[1];
     return FL[0];
   };
   for(let j=0;j<GH;j++) for(let i=0;i<GW;i++){
     const k = id(i,j), cx = i+0.5, cy = j+0.5;
     if(isF(i,j)){
+      support(cx,cy,-2/24);
       // ---- 地面 ----
-      const f = floorPick(i,j), sd = seedOf(i,j,12);
-      put('f/'+f[0]+'/'+f[1]+'/'+sd, assetParts(f[0],f[1],sd), false, cx, cy, 0, ((h32(i,j,13)*4)|0)*Math.PI/2);
+      const treatment=window.SceneAssets ? SceneAssets.floorTreatment(o,i,j) : null;
+      const f=treatment?['scene',treatment.id,1]:floorPick(i,j),sd=treatment?treatment.seed:seedOf(i,j,12);
+      const surface=window.SceneStyle ? SceneStyle.floorSurface(o,i,j) : null;
+      put('f/'+f[0]+'/'+f[1]+'/'+sd, assetParts(f[0],f[1],sd,o.theme.name), false, cx, cy, 0, treatment?treatment.yaw:((h32(i,j,13)*4)|0)*Math.PI/2,1,surface);
+      if(cfg.wall==='dungeon' && window.SceneStyle)for(const patch of SceneStyle.mossPatches(o,i,j)){
+        put('c/ground-moss/'+patch.variant,mossParts(patch.variant),false,patch.x,patch.y,.012,patch.yaw,patch.r/(8/24));
+      }
       // ---- 贴墙小摆件（不阻挡）----
       if(cfg.clutter && cfg.clutter.length && G[k]===1){
         const nW = solid(i-1,j)||solid(i+1,j)||solid(i,j-1);
-        if(nW && h32(i,j,21) < 0.075){
+        const nearExit=cfg.wall==='dungeon' && o.exitPos && Math.hypot(cx-o.exitPos.x,cy-o.exitPos.y)<1.4;
+        if(nW && !nearExit && h32(i,j,21) < 0.075){
           const c = cfg.clutter[(h32(i,j,22)*cfg.clutter.length)|0], sd2 = seedOf(i,j,23);
-          put('c/'+c[0]+'/'+c[1]+'/'+sd2, assetParts(c[0],c[1],sd2), false, cx+(h32(i,j,24)-0.5)*0.2, cy+(h32(i,j,25)-0.5)*0.2, 0, h32(i,j,26)*6.283, 0.8);
+          const edgeClutter=cfg.wall==='dungeon';
+          const dx=edgeClutter ? (solid(i-1,j)?-.28:solid(i+1,j)?.28:0) : 0;
+          const dy=edgeClutter && solid(i,j-1)?-.28:0;
+          const jitter=edgeClutter?.12:.2;
+          put('c/'+c[0]+'/'+c[1]+'/'+sd2, assetParts(c[0],c[1],sd2,o.theme.name), false, cx+dx+(h32(i,j,24)-0.5)*jitter, cy+dy+(h32(i,j,25)-0.5)*jitter, 0, h32(i,j,26)*6.283, 0.8);
         }
       }
       continue;
@@ -385,14 +518,15 @@ function build(o){
     let edge = false;
     for(let dj=-1;dj<=1&&!edge;dj++) for(let di=-1;di<=1;di++) if(isF(i+di,j+dj)){ edge = true; break; }
     if(!edge) continue;
+    support(cx,cy,0);
     const corner = cornerProps.get(k);
     const inRoom = roomId && roomId[k] >= 0;
     if(corner || inRoom){
       // 房内障碍/角落道具：下面先铺地面，再放 3D 道具
-      const f = floorPick(i,j), sd = seedOf(i,j,12);
-      put('f/'+f[0]+'/'+f[1]+'/'+sd, assetParts(f[0],f[1],sd), false, cx, cy, 0, 0);
+      const f=window.SceneAssets?['scene','flagstone',1]:floorPick(i,j),sd=seedOf(i,j,12);
+      put('f/'+f[0]+'/'+f[1]+'/'+sd, assetParts(f[0],f[1],sd,o.theme.name), false, cx, cy, 0, 0);
       const a = corner || cfg.obstacle[(h32(i,j,31)*cfg.obstacle.length)|0], sd2 = seedOf(i,j,32);
-      const P = assetParts(a[0],a[1],sd2);
+      const P = assetParts(a[0],a[1],sd2,o.theme.name);
       const yaw = corner ? (solid(i,j+1) ? Math.PI : 0) : ((h32(i,j,33)*4)|0)*Math.PI/2;
       put('o/'+a[0]+'/'+a[1]+'/'+sd2+'/'+yaw.toFixed(2), P, true, cx, cy, 0, yaw);
       tileExt[k] = Math.max(0.6, P.maxZ) + 0.05; tileSouth[k] = 0.15;
@@ -441,6 +575,7 @@ function build(o){
   for(const g of groups.values()){
     const geo = mergeBaked(g.items); if(!geo) continue;
     const mesh = new T.Mesh(geo, mats[g.kind] || mats.solid);
+    mesh.userData.ground=g.items.some(([,matrix])=>matrix.isGround);
     mesh.matrixAutoUpdate = false; mesh.frustumCulled = false;   // 自定义投影下不依赖 Three 的视锥裁剪（批次很少，开销可忽略）
     if(g.occ) mesh.layers.enable(WALL_LAYER);
     mesh.castShadow = g.occ && g.kind !== 'glow' && g.kind !== 'water';
@@ -451,6 +586,7 @@ function build(o){
   // ---- 主题光照 ----
   const lc = cfg.light;
   hemi.color.setHex(lc.sky); hemi.groundColor.setHex(lc.ground); hemi.intensity = lc.hemi;
+  foundationGeo.dispose();
   sun.intensity = lc.sun;
   if(T.ACESFilmicToneMapping !== undefined) renderer.toneMappingExposure = lc.exposure || 1.08;
   for(const l of torchLights) l.color.setHex(lc.torch);
@@ -481,8 +617,8 @@ function updateLights(o){
   const tx = Math.round(o.cam.x/texel)*texel, ty = Math.round(-o.cam.y/texel)*texel, d = 20;
   sun.target.position.set(tx, ty, 0); sun.position.set(tx + SUN_DIR[0]*d, ty + SUN_DIR[1]*d, SUN_DIR[2]*d);
   sun.target.updateMatrixWorld(); sun.updateMatrixWorld();
-  playerLight.position.set(p.x, -p.y, 1.3);
-  playerLight.intensity = 2.0 * Math.max(0.6, Math.min(1.8, 1 + 0.08*((p.G && p.G.light)||0)));
+  playerLight.position.set(p.x, -p.y, 1.3+(window.DungeonMap?DungeonMap.heightAt(builtTerrain,p.x,p.y):0));
+  playerLight.intensity = 1.65 * Math.max(0.6, Math.min(1.8, 1 + 0.08*((p.G && p.G.light)||0)));
   // 选最近的 N 个火把（插入排序到固定数组，不分配）
   let cnt = 0;
   for(const t of o.torches){
@@ -496,23 +632,30 @@ function updateLights(o){
     const l = torchLights[n], e = n < cnt ? {t:nearT[n]} : null;
     if(!e){ l.intensity = 0; continue; }
     const fl = 0.85 + 0.15*Math.sin(now/90 + e.t.ph) + 0.05*Math.sin(now/37 + e.t.ph*3);
-    l.position.set(e.t.i+0.5, -(e.t.j+1.25), 1.15); l.intensity = 4.25*fl;
+    l.position.set(e.t.i+0.5, -(e.t.j+1.25), 1.15+(window.DungeonMap?DungeonMap.heightAt(builtTerrain,e.t.x,e.t.y):0)); l.intensity = 4.25*fl;
   }
-  if(o.exitOpen && o.exitPos){ exitLight.position.set(o.exitPos.x, -o.exitPos.y, 0.8); exitLight.intensity = 4.2 + Math.sin(now/200); }
+  if(o.exitOpen && o.exitPos){ exitLight.position.set(o.exitPos.x, -o.exitPos.y, 0.8+(window.DungeonMap?DungeonMap.heightAt(builtTerrain,o.exitPos.x,o.exitPos.y):0)); exitLight.intensity = 4.2 + Math.sin(now/200); }
   else exitLight.intensity = 0;
 }
 function frame(o){
+  actorsRendered=false;
   if(!init()) return false;
   if(!o.G || glLost || glFailG === o.G){ if(glc) glc.style.visibility = 'hidden'; return false; }
-  try { return frameInner(o); }
+  try { const rendered = frameInner(o); glFailG = null; return rendered; }
   catch(e){ glFailG = o.G; glc.style.visibility = 'hidden'; console.error('[World3D] 渲染异常，本层回退 2D：', e); return false; }
 }
 function frameInner(o){
   glc.style.visibility = 'visible';
-  if(builtFor !== o.G || builtTheme !== o.theme){ build(o); builtFor = o.G; builtTheme = o.theme; }
+  if(builtFor !== o.G || builtTheme !== o.theme || builtTerrain !== (o.terrain||null)){ build(o); builtFor = o.G; builtTheme = o.theme; }
   ZOOMc = o.zoom; uTime.value = performance.now()/1000;
   setProjection(o.ox, o.oy, o.zoom);
   updateLights(o);
+  if(actors&&!actors.failed&&capturedActors.size){
+    const gameRandom=Math.random;Math.random=graphicsRandom;
+    try{actors.render(camera,W*PR,H*PR,o.ox,o.oy,o.zoom*PR);actorsRendered=true;}
+    catch(e){if(!actors.lost)actors.disable(e);else actors.begin();capturedActors.clear();console.warn('[World3D] 角色合批失败，回退 2D：',e);}
+    finally{Math.random=gameRandom;}
+  }
   if(wlAlphaOK === null && /wlbad/.test(location.search)) wlAlphaOK = false;   // 测试开关
   if(wlAlphaOK === null){   // 一次性自检：空场景 + 透明清屏 → 读回 alpha
     camera.layers.set(30); renderer.setClearColor(0x000000, 0); renderer.clear(); renderer.render(scene, camera);
@@ -527,7 +670,6 @@ function frameInner(o){
   renderer.setClearColor(0x000000, 0); renderer.clear();
   renderer.render(scene, camera);
   wlctx.clearRect(0, 0, wl.width, wl.height); wlctx.drawImage(glc, 0, 0);
-  // Pass 2：完整场景 → 可见画布
   camera.layers.set(0);
   renderer.setClearColor(0x05050a, 1); renderer.clear();
   renderer.render(scene, camera);
@@ -539,7 +681,8 @@ function blit(ctx, P, i, j, alpha){
   const k = j*builtGW + i, h = tileExt[k]; if(!h) return false;
   if(wlAlphaOK === false) return true;   // 驱动不支持透明读回：墙已由 3D 画布绘制，跳过贴回
   const s = tileSouth[k] || 0;
-  const a = P(i-0.12, j, h), b = P(i+1.12, j+1+s, 0);
+  const ground=(x,y)=>window.DungeonMap?DungeonMap.heightAt(builtTerrain,x,y):0,base=ground(i+.5,j+.5);
+  const a = P(i-0.12, j, h+base-ground(i-.12,j)), b = P(i+1.12, j+1+s, base-ground(i+1.12,j+1+s));
   let x0 = a[0], y0 = a[1], x1 = b[0], y1 = b[1];
   const sc = ZOOMc*PR;
   let sx = x0*sc, sy = y0*sc, sw = (x1-x0)*sc, sh = (y1-y0)*sc;
@@ -554,7 +697,7 @@ function beginShadows(){ shN = 0; shRec = !!(ok && shadowsOn && shadowProxy); }
 function endShadows(){ if(!shadowProxy) return; shadowProxy.count = shN; shadowProxy.instanceMatrix.needsUpdate = true; shRec = false; }
 function pushShadow(e, boxes, k, z0, applyFn){
   if(!shRec) return;
-  const arr = shadowProxy.instanceMatrix.array;
+  const arr = shadowProxy.instanceMatrix.array,baseZ=z0+(window.DungeonMap?DungeonMap.heightAt(builtTerrain,e.x,e.y):0);
   for(const b of boxes){
     if(shN >= MAX_SHADOW_BOXES) return;
     const M = b.M, c = applyFn(M, b.c[0], b.c[1], b.c[2]), sx = b.s[0]*k, sy = b.s[1]*k, sz = b.s[2]*k, o = shN*16;
@@ -562,7 +705,7 @@ function pushShadow(e, boxes, k, z0, applyFn){
     arr[o]   = M[0]*sx; arr[o+1] = -M[3]*sx; arr[o+2]  = M[6]*sx; arr[o+3]  = 0;
     arr[o+4] = M[1]*sy; arr[o+5] = -M[4]*sy; arr[o+6]  = M[7]*sy; arr[o+7]  = 0;
     arr[o+8] = M[2]*sz; arr[o+9] = -M[5]*sz; arr[o+10] = M[8]*sz; arr[o+11] = 0;
-    arr[o+12] = e.x + c[0]*k; arr[o+13] = -(e.y + c[1]*k); arr[o+14] = z0 + c[2]*k; arr[o+15] = 1;
+    arr[o+12] = e.x + c[0]*k; arr[o+13] = -(e.y + c[1]*k); arr[o+14] = baseZ + c[2]*k; arr[o+15] = 1;
     shN++;
   }
 }
@@ -572,29 +715,31 @@ function prewarm(){
   if(!init() || warmQ) return;
   warmQ = [];
   for(const [name, cfg] of Object.entries(THEME3D)){
-    for(const f of cfg.floors) for(let sd=7; sd<10; sd++) warmQ.push(()=>assetParts(f[0], f[1], sd));
+    for(const f of cfg.floors) for(let sd=7; sd<10; sd++) warmQ.push(()=>assetParts(f[0], f[1], sd,name));
     for(let k=0;k<WALL_HEIGHTS.length;k++) warmQ.push(()=>wallParts(cfg.wall, k));
-    for(const a of [...(cfg.obstacle||[]), ...(cfg.corner||[])]) for(let sd=7; sd<10; sd++) warmQ.push(()=>assetParts(a[0], a[1], sd));
-    for(const a of [...(cfg.clutter||[])]) for(let sd=7; sd<10; sd++) warmQ.push(()=>assetParts(a[0], a[1], sd));
+    for(const a of [...(cfg.obstacle||[]), ...(cfg.corner||[])]) for(let sd=7; sd<10; sd++) warmQ.push(()=>assetParts(a[0], a[1], sd,name));
+    for(const a of [...(cfg.clutter||[])]) for(let sd=7; sd<10; sd++) warmQ.push(()=>assetParts(a[0], a[1], sd,name));
     for(const a of [...(cfg.wallDeco||[]), cfg.torch]) warmQ.push(()=>assetParts(a[0], a[1], 7));
   }
   const ric = window.requestIdleCallback || (cb => setTimeout(()=>cb({timeRemaining:()=>8}), 30));
   const step = dl => { while(warmQ.length && dl.timeRemaining() > 4) warmQ.shift()(); if(warmQ.length) ric(step); };
   ric(step);
 }
-function hide(){ if(glc) glc.style.visibility = 'hidden'; }
+function hide(){ actorsRendered=false;capturedActors.clear();if(actors)actors.begin();if(glc) glc.style.visibility = 'hidden'; }
 function hasOccluder(i,j){ return !!(tileExt && tileExt[j*builtGW+i]); }
 
 function setShadows(v){ shadowsOn = !!v; if(world) world.traverse(n=>{ if(n.material) n.material.needsUpdate = true; }); for(const m of Object.values(mats||{})) m.needsUpdate = true; }
 function diag(px, py){
-  const o = {wlAlphaOK, lost:glLost, failed:!!glFailG, ok, vis: glc && glc.style.visibility, gl:'?', size: glc ? glc.width+'x'+glc.height : '-', PR, zoom:ZOOMc};
+  const o = {wlAlphaOK, lost:glLost, failed:!!glFailG, ok, vis: glc && glc.style.visibility, gl:'?', size: glc ? glc.width+'x'+glc.height : '-', PR, zoom:ZOOMc, actorRenderer:'canvas'};
+  if(actorsRendered){o.actorRenderer='gpu-instanced-atlas';o.actors=actors.actors;o.actorBoxes=actors.count;o.actorCalls=actors.renderer.info.render.calls;o.actorAtlas=actors.atlasWidth+'x'+actors.atlasHeight;}
+  if(actors?.error)o.actorError=actors.error;
   try { const g = renderer.getContext(), e = g.getExtension('WEBGL_debug_renderer_info'); o.gl = e ? g.getParameter(e.UNMASKED_RENDERER_WEBGL) : g.getParameter(g.RENDERER); o.ctxLost = g.isContextLost(); } catch(e){ o.gl = 'ERR '+e.message; }
   let n = 0, near = 0, nearV = 0, verts = 0;
   if(world) world.children.forEach(m => { if(!m.isMesh) return; n++; verts += m.geometry.attributes.position.count;
     const bb = m.geometry.boundingBox || (m.geometry.computeBoundingBox(), m.geometry.boundingBox);
-    if(bb.max.z < 0.6 && px >= bb.min.x-0.5 && px <= bb.max.x+0.5 && -py >= bb.min.y-0.5 && -py <= bb.max.y+0.5){ near++; if(m.visible) nearV++; } });
+    if((m.userData.ground || bb.max.z < 0.6) && px >= bb.min.x-0.5 && px <= bb.max.x+0.5 && -py >= bb.min.y-0.5 && -py <= bb.max.y+0.5){ near++; if(m.visible) nearV++; } });
   o.meshes = n; o.verts = verts; o.floorNear = near + '/' + nearV; o.calls = renderer ? renderer.info.render.calls : 0; o.tris = renderer ? renderer.info.render.triangles : 0;
   return o;
 }
-window.World3D = {diag, init, decorate, frame, blit, hide, hasOccluder, setShadows, beginShadows, endShadows, pushShadow, prewarm, get glowSpots(){ return glowSpots; }, THEME3D, get ok(){ return ok; }};
+window.World3D = {diag, init, decorate, frame, blit, hide, hasOccluder, setShadows, beginActorCapture, captureRig, endActorCapture, beginShadows, endShadows, pushShadow, prewarm, get glowSpots(){ return glowSpots; }, THEME3D, get ok(){ return ok; }};
 })();

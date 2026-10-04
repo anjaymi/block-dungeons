@@ -1,0 +1,262 @@
+{
+  "date": "2026-10-04",
+  "target": "苔石地牢地面破损与碎片分布",
+  "reference": {
+    "concept": "assets/scenes/moss-stone-v2/floor-concept.png",
+    "generator": "built-in ImageGen",
+    "generationId": "exec-389c7247-5202-48fe-9e59-967c73d7ce83",
+    "inputs": [
+      "assets/render-qa/scene-style/after.jpg",
+      "assets/render-qa/scene-style/reference.jpg"
+    ],
+    "videoURL": "https://www.bilibili.com/video/BV1Z9ar6FEqq/",
+    "limit": "video reference previously observed at about 2:21; concept is an independent art direction"
+  },
+  "authority": "scene-assets.js",
+  "sourceLayout": "assets/scenes/moss-stone-v2/source-layout.json",
+  "export": {
+    "path": "assets/scenes/moss-stone-v2/moss-stone-v2.bbmodel",
+    "native": "Blockbench 5.2.1 / MCP 1.10.0",
+    "format": "free",
+    "meshes": 66,
+    "textures": 1,
+    "atlas": [
+      128,
+      16
+    ],
+    "axis": "[x,y,z] -> [x,z,-y]",
+    "scale": "24 units/tile",
+    "maxVertexError": 0.000004915390903192929,
+    "vertexPrecision": 5,
+    "reimportUUID": "a8e92723-b198-d289-1e52-8e79dbad6c0c",
+    "reimportImageEqual": true
+  },
+  "hypothesis": "完整大石板为主、墙脚不连续局部破损、柱脚偏向一侧，可改善原贯穿切槽与重复缺角造成的杂讯。",
+  "changed": [
+    "凹形崩边与缺角，各三个形状变体",
+    "连续土层与破口内沉落碎片",
+    "稳定局部损坏区，门前 / 出口 / 单格通道保护"
+  ],
+  "preserved": [
+    "地图与碰撞",
+    "角色贴图、模型与战斗",
+    "墙 / 柱 / 原碎石几何",
+    "其他四主题资源和光照",
+    "现有苔藓位置和 shader"
+  ],
+  "criticalFeatures": {
+    "visualSelfCheck": {
+      "nativeFrontRear": "passed",
+      "nativeReimport": "passed",
+      "fixedRoom": "passed",
+      "actualPC": "passed",
+      "mobileLayout": "passed",
+      "userAcceptance": "pending"
+    },
+    "technical": {
+      "closedMeshes": true,
+      "outwardNormals": true,
+      "continuousBed": true,
+      "fragmentsContactBed": true,
+      "fragmentsOutsideSurvivingStone": true,
+      "highestFloorUnchanged": true,
+      "doorExitCorridorProtection": true,
+      "distributionStable": true,
+      "runtimeNativeAuthorityEqual": true,
+      "paletteUVPixelsEqual": true,
+      "userUnsavedTreePreserved": true
+    }
+  },
+  "cameras": {
+    "native": {
+      "view": "floor_damage_v2",
+      "position": [
+        105,
+        125,
+        165
+      ],
+      "target": [
+        0,
+        9,
+        10
+      ],
+      "projection": "orthographic",
+      "zoom": 0.125
+    },
+    "fixedRoom": {
+      "GW": 27,
+      "GH": 21,
+      "cam": [
+        13.5,
+        11
+      ],
+      "projectionCenter": [
+        13.5,
+        10
+      ],
+      "viewport": [
+        1280,
+        800
+      ],
+      "timeMS": 1000,
+      "fixture": "tests/floor-damage-review.html",
+      "intact": 204,
+      "damaged": 46,
+      "previousTriangles": 81120,
+      "currentTriangles": 82116,
+      "previousBatches": 10,
+      "currentBatches": 10,
+      "kind": "controlled fixture, not the user current map"
+    },
+    "actualGame": {
+      "pcOuter": [
+        1280,
+        720
+      ],
+      "pcInner": [
+        1280,
+        639
+      ],
+      "mobileOuter": [
+        844,
+        470
+      ],
+      "mobileInner": [
+        844,
+        389
+      ]
+    }
+  },
+  "evidence": [
+    "assets/scenes/moss-stone-v2/native-front.png",
+    "assets/scenes/moss-stone-v2/native-rear.png",
+    "assets/scenes/moss-stone-v2/native-reimport.png",
+    "assets/render-qa/floor-damage-v2/before.jpg",
+    "assets/render-qa/floor-damage-v2/after.jpg",
+    "assets/render-qa/floor-damage-v2/comparison.png",
+    "assets/render-qa/floor-damage-v2/game-pc.jpg",
+    "assets/render-qa/floor-damage-v2/game-mobile.jpg"
+  ],
+  "tests": {
+    "passed": 166,
+    "failed": 0
+  },
+  "limits": [
+    "概念中的细微石材表面纹理尚未完整实现",
+    "手机布局检查不等于真机性能与手感验收",
+    "浏览器日志含既有无来源 MutationObserver 错误，未宣称零错误"
+  ],
+  "hashes": [
+    {
+      "path": "scene-assets.js",
+      "sha256": "5a28c2519e896f57d8868c8f088062041102b756c9318d04463d5cf95fff2434"
+    },
+    {
+      "path": "world3d.js",
+      "sha256": "7c6e3ca9a4cb1fde5fd27ba1101562e3fafb8243de9a8e981a4d2a7df491716f"
+    },
+    {
+      "path": "block-dungeons.html",
+      "sha256": "1e8464e8f360e510822e7bd4a6413fffc45aa1245027d1847d43c0f4846afdf0"
+    },
+    {
+      "path": "tests/scene-assets.test.cjs",
+      "sha256": "6c574610f7f06a4df9b90f664cb951b556c0697522c06ed8a66cb62047239323"
+    },
+    {
+      "path": "tests/build-scene-assets.cjs",
+      "sha256": "b9130e81ce22bcfa03086fbca8369d90c03ce5c32e4ab3df27643a7fb0351264"
+    },
+    {
+      "path": "tests/floor-damage-review.html",
+      "sha256": "71d8057570acc1176b15ec94d96e100c9d2cca0c904a285e1d9e5200390b7b67"
+    },
+    {
+      "path": "combat-motion.js",
+      "sha256": "d3c7b32dcf9b8e2148e68586970cdb35b9afd98f2e096f2d98fdb6eda3bfa3d1"
+    },
+    {
+      "path": "weapon-models.js",
+      "sha256": "1839a33629590c0ed2959403d3dac002313d3585875fc03d808ab04535ab15c5"
+    },
+    {
+      "path": "weapon-gameplay.js",
+      "sha256": "6522b9b56f62c14c20c908e35bb65fac69ba31d6e52d6287406e57b1af82a8fb"
+    },
+    {
+      "path": "scene-style.js",
+      "sha256": "4819196f883cd3d25c85e46173cfe77d5fcd8a7de232255e590effeb620e0889"
+    },
+    {
+      "path": "scenefx.js",
+      "sha256": "6797c90fd2ad477744ca505110104846bfc58421e2011596504a401cfa57e213"
+    },
+    {
+      "path": "assets/scenes/moss-stone-v2/moss-stone-v2.bbmodel",
+      "sha256": "4a3e25fb9df95254372556ae95476a85f271bddbb3b67d3670e5fabc283d0bcc"
+    },
+    {
+      "path": "assets/scenes/moss-stone-v2/palette.png",
+      "sha256": "b8833d374ecf992794696a9e9bd8cf48fa43fc33bf67da63d998ec8b6690e3ab"
+    },
+    {
+      "path": "assets/scenes/moss-stone-v2/floor-concept.png",
+      "sha256": "ff7f41e1b560e767eff9bffcd2ed023bb6ce06ac20adc23e41f05c115f86354d"
+    },
+    {
+      "path": "assets/scenes/moss-stone-v2/source-layout.json",
+      "sha256": "1e4d98556929bf20c6b6e5f3eaccccfd504589151e8ce9d74e6568164362ff45"
+    }
+  ],
+  "nativeCleanup": {
+    "offscreenView": "floor_damage_v2",
+    "disposeError": "onContextMenu is not defined",
+    "registryRemoved": true,
+    "userViewsPreserved": true
+  },
+  "diagnostics": {
+    "pc": {
+      "wlAlphaOK": true,
+      "lost": false,
+      "failed": false,
+      "ok": true,
+      "vis": "visible",
+      "gl": "ANGLE (NVIDIA, NVIDIA GeForce RTX 3070 Ti (0x00002482) Direct3D11 vs_5_0 ps_5_0, D3D11)",
+      "size": "1280x639",
+      "PR": 1,
+      "zoom": 1.8497368421052633,
+      "actorRenderer": "canvas",
+      "ctxLost": false,
+      "meshes": 27,
+      "verts": 1017144,
+      "floorNear": "1/1",
+      "calls": 27,
+      "tris": 339048
+    },
+    "mobile": {
+      "wlAlphaOK": true,
+      "lost": false,
+      "failed": false,
+      "ok": true,
+      "vis": "visible",
+      "gl": "ANGLE (NVIDIA, NVIDIA GeForce RTX 3070 Ti (0x00002482) Direct3D11 vs_5_0 ps_5_0, D3D11)",
+      "size": "844x389",
+      "PR": 1,
+      "zoom": 1.6500000000000001,
+      "actorRenderer": "canvas",
+      "ctxLost": false,
+      "meshes": 27,
+      "verts": 1017144,
+      "floorNear": "1/1",
+      "calls": 27,
+      "tris": 339048
+    }
+  },
+  "runtimeMaterial": {
+    "shader": "stone-material.js",
+    "program": "dry-stone-v1",
+    "evidence": "assets/render-qa/stone-shader/source-manifest.json",
+    "nativeGeometryUnchanged": true,
+    "regressionPassed": 170
+  }
+}

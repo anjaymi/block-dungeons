@@ -1,0 +1,550 @@
+{
+  "renderer": "Actual game Canvas inventory + HUD and production PNGs; native Skia frame sequence. Frozen 2D world fixture. Not an Edge or real-device recording.",
+  "frameDuration": 40,
+  "captures": [
+    {
+      "path": "E:\\暗黑肉鸽\\assets\\inventory\\qa\\mobile-motion.gif",
+      "width": 844,
+      "height": 390,
+      "frames": 31,
+      "samples": [
+        {
+          "ms": 0,
+          "state": "play",
+          "opacity": 0,
+          "press": 0
+        },
+        {
+          "ms": 40,
+          "state": "play",
+          "opacity": 0,
+          "press": 0
+        },
+        {
+          "ms": 80,
+          "state": "play",
+          "opacity": 0,
+          "press": 0
+        },
+        {
+          "ms": 120,
+          "state": "bag",
+          "opacity": 0,
+          "press": 0
+        },
+        {
+          "ms": 160,
+          "state": "bag",
+          "opacity": 0.6402527217007616,
+          "press": 0
+        },
+        {
+          "ms": 200,
+          "state": "bag",
+          "opacity": 0.9016195927941055,
+          "press": 0
+        },
+        {
+          "ms": 240,
+          "state": "bag",
+          "opacity": 0.9768499826240316,
+          "press": 0
+        },
+        {
+          "ms": 280,
+          "state": "bag",
+          "opacity": 0.9964451542666382,
+          "press": 0
+        },
+        {
+          "ms": 320,
+          "state": "bag",
+          "opacity": 0.9998999912872648,
+          "press": 0
+        },
+        {
+          "ms": 360,
+          "state": "bag",
+          "opacity": 1,
+          "press": 0
+        },
+        {
+          "ms": 400,
+          "state": "bag",
+          "opacity": 1,
+          "press": 0
+        },
+        {
+          "ms": 440,
+          "state": "bag",
+          "opacity": 1,
+          "press": 0
+        },
+        {
+          "ms": 480,
+          "state": "bag",
+          "opacity": 1,
+          "press": 0
+        },
+        {
+          "ms": 520,
+          "state": "bag",
+          "opacity": 1,
+          "press": 0
+        },
+        {
+          "ms": 560,
+          "state": "bag",
+          "opacity": 1,
+          "press": 0.9659861613533565
+        },
+        {
+          "ms": 600,
+          "state": "bag",
+          "opacity": 1,
+          "press": 1
+        },
+        {
+          "ms": 640,
+          "state": "bag",
+          "opacity": 1,
+          "press": 1
+        },
+        {
+          "ms": 680,
+          "state": "bag",
+          "opacity": 1,
+          "press": 1
+        },
+        {
+          "ms": 720,
+          "state": "bag",
+          "opacity": 1,
+          "press": 1
+        },
+        {
+          "ms": 760,
+          "state": "bag",
+          "opacity": 1,
+          "press": 0.22462225867226948
+        },
+        {
+          "ms": 800,
+          "state": "bag",
+          "opacity": 1,
+          "press": 0.034013838646643535
+        },
+        {
+          "ms": 840,
+          "state": "bag",
+          "opacity": 1,
+          "press": 0.0026368272524166514
+        },
+        {
+          "ms": 880,
+          "state": "bag",
+          "opacity": 1,
+          "press": 0
+        },
+        {
+          "ms": 920,
+          "state": "bag",
+          "opacity": 1,
+          "press": 0
+        },
+        {
+          "ms": 960,
+          "state": "bag",
+          "opacity": 1,
+          "press": 0
+        },
+        {
+          "ms": 1000,
+          "state": "play",
+          "opacity": 1,
+          "press": 0
+        },
+        {
+          "ms": 1040,
+          "state": "play",
+          "opacity": 0.22462225867226948,
+          "press": 0
+        },
+        {
+          "ms": 1080,
+          "state": "bag",
+          "opacity": 0.034013838646643535,
+          "press": 0
+        },
+        {
+          "ms": 1120,
+          "state": "bag",
+          "opacity": 0.6671303206535738,
+          "press": 0
+        },
+        {
+          "ms": 1160,
+          "state": "bag",
+          "opacity": 0.9136224764296291,
+          "press": 0
+        },
+        {
+          "ms": 1200,
+          "state": "play",
+          "opacity": 0.981117457116917,
+          "press": 0
+        },
+        {
+          "ms": 1240,
+          "state": "play",
+          "opacity": 0.21296431663129378,
+          "press": 0
+        },
+        {
+          "ms": 1280,
+          "state": "play",
+          "opacity": 0.03081816700708795,
+          "press": 0
+        },
+        {
+          "ms": 1320,
+          "state": "play",
+          "opacity": 0.002115027428112093,
+          "press": 0
+        },
+        {
+          "ms": 1360,
+          "state": "play",
+          "opacity": 0,
+          "press": 0
+        },
+        {
+          "ms": 1400,
+          "state": "play",
+          "opacity": 0,
+          "press": 0
+        },
+        {
+          "ms": 1440,
+          "state": "play",
+          "opacity": 0,
+          "press": 0
+        },
+        {
+          "ms": 1480,
+          "state": "play",
+          "opacity": 0,
+          "press": 0
+        },
+        {
+          "ms": 1520,
+          "state": "play",
+          "opacity": 0,
+          "press": 0
+        },
+        {
+          "ms": 1560,
+          "state": "play",
+          "opacity": 0,
+          "press": 0
+        },
+        {
+          "ms": 1600,
+          "state": "play",
+          "opacity": 0,
+          "press": 0
+        },
+        {
+          "ms": 1640,
+          "state": "play",
+          "opacity": 0,
+          "press": 0
+        },
+        {
+          "ms": 1680,
+          "state": "play",
+          "opacity": 0,
+          "press": 0
+        },
+        {
+          "ms": 1720,
+          "state": "play",
+          "opacity": 0,
+          "press": 0
+        }
+      ]
+    },
+    {
+      "path": "E:\\暗黑肉鸽\\assets\\inventory\\qa\\pc-motion.gif",
+      "width": 1280,
+      "height": 760,
+      "frames": 31,
+      "samples": [
+        {
+          "ms": 0,
+          "state": "play",
+          "opacity": 0,
+          "press": 0
+        },
+        {
+          "ms": 40,
+          "state": "play",
+          "opacity": 0,
+          "press": 0
+        },
+        {
+          "ms": 80,
+          "state": "play",
+          "opacity": 0,
+          "press": 0
+        },
+        {
+          "ms": 120,
+          "state": "bag",
+          "opacity": 0,
+          "press": 0
+        },
+        {
+          "ms": 160,
+          "state": "bag",
+          "opacity": 0.6402527217007616,
+          "press": 0
+        },
+        {
+          "ms": 200,
+          "state": "bag",
+          "opacity": 0.9016195927941055,
+          "press": 0
+        },
+        {
+          "ms": 240,
+          "state": "bag",
+          "opacity": 0.9768499826240316,
+          "press": 0
+        },
+        {
+          "ms": 280,
+          "state": "bag",
+          "opacity": 0.9964451542666382,
+          "press": 0
+        },
+        {
+          "ms": 320,
+          "state": "bag",
+          "opacity": 0.9998999912872648,
+          "press": 0
+        },
+        {
+          "ms": 360,
+          "state": "bag",
+          "opacity": 1,
+          "press": 0
+        },
+        {
+          "ms": 400,
+          "state": "bag",
+          "opacity": 1,
+          "press": 0
+        },
+        {
+          "ms": 440,
+          "state": "bag",
+          "opacity": 1,
+          "press": 0
+        },
+        {
+          "ms": 480,
+          "state": "bag",
+          "opacity": 1,
+          "press": 0
+        },
+        {
+          "ms": 520,
+          "state": "bag",
+          "opacity": 1,
+          "press": 0
+        },
+        {
+          "ms": 560,
+          "state": "bag",
+          "opacity": 1,
+          "press": 0.9659861613533565
+        },
+        {
+          "ms": 600,
+          "state": "bag",
+          "opacity": 1,
+          "press": 1
+        },
+        {
+          "ms": 640,
+          "state": "bag",
+          "opacity": 1,
+          "press": 1
+        },
+        {
+          "ms": 680,
+          "state": "bag",
+          "opacity": 1,
+          "press": 1
+        },
+        {
+          "ms": 720,
+          "state": "bag",
+          "opacity": 1,
+          "press": 1
+        },
+        {
+          "ms": 760,
+          "state": "bag",
+          "opacity": 1,
+          "press": 0.22462225867226948
+        },
+        {
+          "ms": 800,
+          "state": "bag",
+          "opacity": 1,
+          "press": 0.034013838646643535
+        },
+        {
+          "ms": 840,
+          "state": "bag",
+          "opacity": 1,
+          "press": 0.0026368272524166514
+        },
+        {
+          "ms": 880,
+          "state": "bag",
+          "opacity": 1,
+          "press": 0
+        },
+        {
+          "ms": 920,
+          "state": "bag",
+          "opacity": 1,
+          "press": 0
+        },
+        {
+          "ms": 960,
+          "state": "bag",
+          "opacity": 1,
+          "press": 0
+        },
+        {
+          "ms": 1000,
+          "state": "play",
+          "opacity": 1,
+          "press": 0
+        },
+        {
+          "ms": 1040,
+          "state": "play",
+          "opacity": 0.22462225867226948,
+          "press": 0
+        },
+        {
+          "ms": 1080,
+          "state": "bag",
+          "opacity": 0.034013838646643535,
+          "press": 0
+        },
+        {
+          "ms": 1120,
+          "state": "bag",
+          "opacity": 0.6671303206535738,
+          "press": 0
+        },
+        {
+          "ms": 1160,
+          "state": "bag",
+          "opacity": 0.9136224764296291,
+          "press": 0
+        },
+        {
+          "ms": 1200,
+          "state": "play",
+          "opacity": 0.981117457116917,
+          "press": 0
+        },
+        {
+          "ms": 1240,
+          "state": "play",
+          "opacity": 0.21296431663129378,
+          "press": 0
+        },
+        {
+          "ms": 1280,
+          "state": "play",
+          "opacity": 0.03081816700708795,
+          "press": 0
+        },
+        {
+          "ms": 1320,
+          "state": "play",
+          "opacity": 0.002115027428112093,
+          "press": 0
+        },
+        {
+          "ms": 1360,
+          "state": "play",
+          "opacity": 0,
+          "press": 0
+        },
+        {
+          "ms": 1400,
+          "state": "play",
+          "opacity": 0,
+          "press": 0
+        },
+        {
+          "ms": 1440,
+          "state": "play",
+          "opacity": 0,
+          "press": 0
+        },
+        {
+          "ms": 1480,
+          "state": "play",
+          "opacity": 0,
+          "press": 0
+        },
+        {
+          "ms": 1520,
+          "state": "play",
+          "opacity": 0,
+          "press": 0
+        },
+        {
+          "ms": 1560,
+          "state": "play",
+          "opacity": 0,
+          "press": 0
+        },
+        {
+          "ms": 1600,
+          "state": "play",
+          "opacity": 0,
+          "press": 0
+        },
+        {
+          "ms": 1640,
+          "state": "play",
+          "opacity": 0,
+          "press": 0
+        },
+        {
+          "ms": 1680,
+          "state": "play",
+          "opacity": 0,
+          "press": 0
+        },
+        {
+          "ms": 1720,
+          "state": "play",
+          "opacity": 0,
+          "press": 0
+        }
+      ]
+    }
+  ]
+}

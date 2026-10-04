@@ -1,0 +1,23 @@
+{
+  "renderer": "Actual game Canvas functions and decoded production PNGs; dungeon uses the existing 2D terrain fallback. These are not Edge screenshots or GPU validation.",
+  "captures": [
+    {
+      "name": "dungeon-pc",
+      "width": 1280,
+      "height": 760,
+      "actors": 4
+    },
+    {
+      "name": "dungeon-mobile",
+      "width": 844,
+      "height": 390,
+      "actors": 4
+    }
+  ],
+  "skins": [
+    "akane",
+    "yoru",
+    "yuki",
+    "midori"
+  ]
+}

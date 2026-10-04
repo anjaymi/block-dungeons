@@ -1,0 +1,309 @@
+{
+  "date": "2026-10-04",
+  "baselineDescription": "Previous optimized version at start of this round",
+  "candidateDescription": "Final GPU-instanced atlas renderer with original Canvas compositing order",
+  "baseline": [
+    {
+      "file": "assets/render-qa/performance-round2/baseline/block-dungeons.html",
+      "bytes": 510536,
+      "sha256": "7f162a0aad65a4621e81797cc5ae2f18aa9a31e72388215a6cd3ffa6c642fd8b"
+    },
+    {
+      "file": "assets/render-qa/performance-round2/baseline/combat-motion.js",
+      "bytes": 4719,
+      "sha256": "d3c7b32dcf9b8e2148e68586970cdb35b9afd98f2e096f2d98fdb6eda3bfa3d1"
+    },
+    {
+      "file": "assets/render-qa/performance-round2/baseline/combat-rules.js",
+      "bytes": 2522,
+      "sha256": "e929437bdb1d97c99a8f498c0a45bf1de93dd6726a04f4a20c64f4dc373f9d1c"
+    },
+    {
+      "file": "assets/render-qa/performance-round2/baseline/crowd-grid.js",
+      "bytes": 2696,
+      "sha256": "0e7153c321424d433360b07d429a0dd4aba22279c58f7b2fa191c18a97952101"
+    },
+    {
+      "file": "assets/render-qa/performance-round2/baseline/dungeon-journey-runtime.js",
+      "bytes": 10354,
+      "sha256": "554fefee17c91e35273f5a1f9b407bce44e835df85b00df98cf8cb2d12cdeec2"
+    },
+    {
+      "file": "assets/render-qa/performance-round2/baseline/dungeon-journey.js",
+      "bytes": 4956,
+      "sha256": "5ce57f8a008068f0b22c2d51c32a1e231a7c0fe257e31a8919230bd1736a9c52"
+    },
+    {
+      "file": "assets/render-qa/performance-round2/baseline/dungeon-map.js",
+      "bytes": 16087,
+      "sha256": "40fbb8308c7988bd840436b88037e12dac14b1a015956213e837a86f7528890e"
+    },
+    {
+      "file": "assets/render-qa/performance-round2/baseline/fantasy-hud.js",
+      "bytes": 11632,
+      "sha256": "eb4690f7ec0b890399a6ce96dcfe9b6b17b024aa728ef71d7600e4d869cd15f1"
+    },
+    {
+      "file": "assets/render-qa/performance-round2/baseline/hud-controller.js",
+      "bytes": 8876,
+      "sha256": "60b1f27872954c42dbe78b4383c61d83f6210fab7279fb37f472e04c5617ef95"
+    },
+    {
+      "file": "assets/render-qa/performance-round2/baseline/hud-layout.js",
+      "bytes": 4329,
+      "sha256": "fa6004e996e040b9aff0752a7697cf0acbe24d42ea026eb19719aaac4bdd6db8"
+    },
+    {
+      "file": "assets/render-qa/performance-round2/baseline/inventory-assets.js",
+      "bytes": 3129,
+      "sha256": "a9d1383abc2e65db8ce6c1b598e17bf8aeae116a219cf1b323623ad88116371c"
+    },
+    {
+      "file": "assets/render-qa/performance-round2/baseline/inventory-controller.js",
+      "bytes": 6530,
+      "sha256": "aea890d1dfebe4a869758801f966d5e6bc79bdd0376ddbb847221f77cf55a489"
+    },
+    {
+      "file": "assets/render-qa/performance-round2/baseline/inventory-layout.js",
+      "bytes": 4573,
+      "sha256": "60ab4eb2f175135371af9d321d5bf733ba417b9bf6ba4f182b80817b3b822005"
+    },
+    {
+      "file": "assets/render-qa/performance-round2/baseline/inventory-ui.js",
+      "bytes": 13320,
+      "sha256": "fa5e3d87193f2cf51bada8d2feb6985b8b0b1a0985afaad46ce194f7a3059d55"
+    },
+    {
+      "file": "assets/render-qa/performance-round2/baseline/scene-assets.js",
+      "bytes": 13788,
+      "sha256": "fd9c79081de5cc9caad5972aedffdc2dc27105925d3670f1e158a70a69676815"
+    },
+    {
+      "file": "assets/render-qa/performance-round2/baseline/scene-style.js",
+      "bytes": 5055,
+      "sha256": "4819196f883cd3d25c85e46173cfe77d5fcd8a7de232255e590effeb620e0889"
+    },
+    {
+      "file": "assets/render-qa/performance-round2/baseline/scenefx.js",
+      "bytes": 14669,
+      "sha256": "6797c90fd2ad477744ca505110104846bfc58421e2011596504a401cfa57e213"
+    },
+    {
+      "file": "assets/render-qa/performance-round2/baseline/sfx.js",
+      "bytes": 30899,
+      "sha256": "cf57674ec1ddd262ae77e6a30225e07c6049a81652f2e528d97eeecf71087bb0"
+    },
+    {
+      "file": "assets/render-qa/performance-round2/baseline/stone-material.js",
+      "bytes": 4061,
+      "sha256": "83b604176ae547c9f47cc6274bd3faf5e79089edaf13abfdfd5ce4a8bf162f64"
+    },
+    {
+      "file": "assets/render-qa/performance-round2/baseline/ui-kit.js",
+      "bytes": 12230,
+      "sha256": "7d009d9d7e5dfffbc58c1592b4a1617e2ca04b24a931909cb13a6d81aec67369"
+    },
+    {
+      "file": "assets/render-qa/performance-round2/baseline/ui-motion.js",
+      "bytes": 2763,
+      "sha256": "600a85fff0319a09f11251257ffb2c4c0bf4e45c8a33b420bea0e49c6ad3211e"
+    },
+    {
+      "file": "assets/render-qa/performance-round2/baseline/voxmobs.js",
+      "bytes": 6763,
+      "sha256": "be84bfc935482d77b28752eade4beb26a45875e80a9e7db25e33101eb886cc38"
+    },
+    {
+      "file": "assets/render-qa/performance-round2/baseline/weapon-gameplay.js",
+      "bytes": 8406,
+      "sha256": "6522b9b56f62c14c20c908e35bb65fac69ba31d6e52d6287406e57b1af82a8fb"
+    },
+    {
+      "file": "assets/render-qa/performance-round2/baseline/weapon-models.js",
+      "bytes": 49037,
+      "sha256": "1839a33629590c0ed2959403d3dac002313d3585875fc03d808ab04535ab15c5"
+    },
+    {
+      "file": "assets/render-qa/performance-round2/baseline/world3d.js",
+      "bytes": 44727,
+      "sha256": "00e2ae7afb36b88de2655110b04d988b2dd7105894a42a380accebb0cf5b06ac"
+    }
+  ],
+  "candidate": [
+    {
+      "file": "block-dungeons.html",
+      "bytes": 511175,
+      "sha256": "58052e059e48575d24a45099b8e896e2c5f6dbfddbeb003629e7d82fc0423e58"
+    },
+    {
+      "file": "vendor/voxel-world.js",
+      "bytes": 3177826,
+      "sha256": "c73f63b06023c4f7fa90298745025524d4f985cf56cb1b0f8ed1851241cdf515"
+    },
+    {
+      "file": "scene-style.js",
+      "bytes": 5055,
+      "sha256": "4819196f883cd3d25c85e46173cfe77d5fcd8a7de232255e590effeb620e0889"
+    },
+    {
+      "file": "dungeon-map.js",
+      "bytes": 16087,
+      "sha256": "40fbb8308c7988bd840436b88037e12dac14b1a015956213e837a86f7528890e"
+    },
+    {
+      "file": "dungeon-journey.js",
+      "bytes": 4956,
+      "sha256": "5ce57f8a008068f0b22c2d51c32a1e231a7c0fe257e31a8919230bd1736a9c52"
+    },
+    {
+      "file": "dungeon-journey-runtime.js",
+      "bytes": 10367,
+      "sha256": "1dd5fa30f8399e2a5f8f3467e098c41a3348f753308aeacaeec6a505eb0c16dd"
+    },
+    {
+      "file": "scene-assets.js",
+      "bytes": 13788,
+      "sha256": "fd9c79081de5cc9caad5972aedffdc2dc27105925d3670f1e158a70a69676815"
+    },
+    {
+      "file": "stone-material.js",
+      "bytes": 4061,
+      "sha256": "83b604176ae547c9f47cc6274bd3faf5e79089edaf13abfdfd5ce4a8bf162f64"
+    },
+    {
+      "file": "actor-batch.js",
+      "bytes": 14079,
+      "sha256": "09c48ce565e748fb1c8d22d9c2c6f52ca29533a99fdf40579cefa24a5d3dd609"
+    },
+    {
+      "file": "world3d.js",
+      "bytes": 46954,
+      "sha256": "6242534e1c47dd33f3ad7055127b3005f4e246865b7c23c6edb65e5b43fc5125"
+    },
+    {
+      "file": "voxmobs.js",
+      "bytes": 6763,
+      "sha256": "be84bfc935482d77b28752eade4beb26a45875e80a9e7db25e33101eb886cc38"
+    },
+    {
+      "file": "weapon-models.js",
+      "bytes": 49037,
+      "sha256": "1839a33629590c0ed2959403d3dac002313d3585875fc03d808ab04535ab15c5"
+    },
+    {
+      "file": "scenefx.js",
+      "bytes": 14669,
+      "sha256": "6797c90fd2ad477744ca505110104846bfc58421e2011596504a401cfa57e213"
+    },
+    {
+      "file": "ui-kit.js",
+      "bytes": 12230,
+      "sha256": "7d009d9d7e5dfffbc58c1592b4a1617e2ca04b24a931909cb13a6d81aec67369"
+    },
+    {
+      "file": "ui-motion.js",
+      "bytes": 2763,
+      "sha256": "600a85fff0319a09f11251257ffb2c4c0bf4e45c8a33b420bea0e49c6ad3211e"
+    },
+    {
+      "file": "hud-layout.js",
+      "bytes": 4329,
+      "sha256": "fa6004e996e040b9aff0752a7697cf0acbe24d42ea026eb19719aaac4bdd6db8"
+    },
+    {
+      "file": "fantasy-hud.js",
+      "bytes": 11632,
+      "sha256": "eb4690f7ec0b890399a6ce96dcfe9b6b17b024aa728ef71d7600e4d869cd15f1"
+    },
+    {
+      "file": "hud-controller.js",
+      "bytes": 8876,
+      "sha256": "60b1f27872954c42dbe78b4383c61d83f6210fab7279fb37f472e04c5617ef95"
+    },
+    {
+      "file": "inventory-layout.js",
+      "bytes": 4573,
+      "sha256": "60ab4eb2f175135371af9d321d5bf733ba417b9bf6ba4f182b80817b3b822005"
+    },
+    {
+      "file": "inventory-assets.js",
+      "bytes": 3129,
+      "sha256": "a9d1383abc2e65db8ce6c1b598e17bf8aeae116a219cf1b323623ad88116371c"
+    },
+    {
+      "file": "inventory-controller.js",
+      "bytes": 6530,
+      "sha256": "aea890d1dfebe4a869758801f966d5e6bc79bdd0376ddbb847221f77cf55a489"
+    },
+    {
+      "file": "inventory-ui.js",
+      "bytes": 13320,
+      "sha256": "fa5e3d87193f2cf51bada8d2feb6985b8b0b1a0985afaad46ce194f7a3059d55"
+    },
+    {
+      "file": "combat-rules.js",
+      "bytes": 2522,
+      "sha256": "e929437bdb1d97c99a8f498c0a45bf1de93dd6726a04f4a20c64f4dc373f9d1c"
+    },
+    {
+      "file": "crowd-grid.js",
+      "bytes": 2696,
+      "sha256": "0e7153c321424d433360b07d429a0dd4aba22279c58f7b2fa191c18a97952101"
+    },
+    {
+      "file": "weapon-gameplay.js",
+      "bytes": 8406,
+      "sha256": "6522b9b56f62c14c20c908e35bb65fac69ba31d6e52d6287406e57b1af82a8fb"
+    },
+    {
+      "file": "combat-motion.js",
+      "bytes": 4719,
+      "sha256": "d3c7b32dcf9b8e2148e68586970cdb35b9afd98f2e096f2d98fdb6eda3bfa3d1"
+    },
+    {
+      "file": "sfx.js",
+      "bytes": 30899,
+      "sha256": "cf57674ec1ddd262ae77e6a30225e07c6049a81652f2e528d97eeecf71087bb0"
+    },
+    {
+      "file": "README.md",
+      "bytes": 21483,
+      "sha256": "c74ae8190e928c330b7492e5da9f141247155518b3b1ccfb4f402a7df27fc27d"
+    },
+    {
+      "file": "tests/performance-scenario.js",
+      "bytes": 3582,
+      "sha256": "f91e6207cd2d2068802403c1c65dddf012ceac9b954c12cadcbdd50ed9e7e65b"
+    },
+    {
+      "file": "tests/performance-round2-review.html",
+      "bytes": 4633,
+      "sha256": "2b137c48eed126437168bf5bc093fa548862ee8461a338cb491954a2e934e3a4"
+    },
+    {
+      "file": "tests/actor-batch.test.cjs",
+      "bytes": 7429,
+      "sha256": "00946e32270de1c6dbbdc598a6645402b77f367266a9c51094f81058ebc6a4d4"
+    },
+    {
+      "file": "tests/character-rendering.test.cjs",
+      "bytes": 10306,
+      "sha256": "c625fcba26463e2f98e2927931756478a7d171cfecc309bff3b5d97f7d2a40f9"
+    },
+    {
+      "file": "tests/game-harness.cjs",
+      "bytes": 4244,
+      "sha256": "12c36e1a8714e8d37d333391042dca96de017458b55a784deb9bc49f2f20c2d9"
+    }
+  ],
+  "finalComparison": "assets/render-qa/performance-round2/comparison.json",
+  "intermediateTrials": [
+    "experiments/",
+    "direct-trial/"
+  ],
+  "checks": {
+    "automaticTests": 215,
+    "device": "RTX 3070 Ti via ANGLE D3D11",
+    "visuals": "Five themes, frozen/tinted actors, fading corpse, normal adventure and inventory; controlled staged scenes. Phone hardware was not tested."
+  }
+}

@@ -1,0 +1,75 @@
+{
+  "checkedAt": "2026-10-04T00:58:09.933Z",
+  "desktopViewport": [
+    1280,
+    720
+  ],
+  "mobileViewport": [
+    844,
+    470
+  ],
+  "sceneRendering": {
+    "result": {
+      "type": "object",
+      "value": {
+        "exitOpen": true,
+        "gl": {
+          "PR": 1,
+          "actorRenderer": "canvas",
+          "calls": 56,
+          "ctxLost": false,
+          "failed": false,
+          "floorNear": "0/0",
+          "gl": "ANGLE (NVIDIA, NVIDIA GeForce RTX 3070 Ti (0x00002482) Direct3D11 vs_5_0 ps_5_0, D3D11)",
+          "lost": false,
+          "meshes": 56,
+          "ok": true,
+          "size": "1280x720",
+          "tris": 415808,
+          "verts": 1247424,
+          "vis": "visible",
+          "wlAlphaOK": true,
+          "zoom": 2.0842105263157897
+        },
+        "needed": 2,
+        "seals": 2,
+        "seed": 6441,
+        "theme": "苔石地牢"
+      }
+    }
+  },
+  "consoleAtSceneReview": [],
+  "nativeKeyboard": {
+    "portal": {
+      "state": "upgrade",
+      "choices": 3,
+      "hp": 40
+    },
+    "selectedUpgrade": {
+      "state": "play",
+      "floor": 2,
+      "seals": 0,
+      "needed": 2,
+      "trial": "unstarted",
+      "exitOpen": false,
+      "hp": 40
+    }
+  },
+  "questCapture": {
+    "result": {
+      "type": "object",
+      "value": {
+        "exitOpen": false,
+        "floor": 2,
+        "hp": 40,
+        "needed": 2,
+        "seals": 0,
+        "state": "pause",
+        "theme": "幽深矿井",
+        "trial": "unstarted"
+      }
+    }
+  },
+  "staging": "CDP positioned the player and set consistent room-clear/seal states for scene capture and exit inspection. F and 1 were native browser key events. The shrine and quest panel were opened through native browser clicks. The final preview was reloaded to clear staged states.",
+  "mobileLimit": "Phone viewport in desktop browser. Native touch dispatch unsupported; touch routing checked by the game harness."
+}

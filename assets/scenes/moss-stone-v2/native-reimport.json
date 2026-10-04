@@ -1,0 +1,23 @@
+{
+  "project": {
+    "name": "方块地牢 · 苔石地面 v2 · 最终导出复核",
+    "uuid": "a8e92723-b198-d289-1e52-8e79dbad6c0c",
+    "save_path": ""
+  },
+  "format": {
+    "id": "free",
+    "name": "通用模型"
+  },
+  "resolution": {
+    "texture_width": 128,
+    "texture_height": 16
+  },
+  "counts": {
+    "cubes": 0,
+    "meshes": 66,
+    "groups": 0,
+    "textures": 1,
+    "outliner_elements": 66
+  },
+  "root_groups": []
+}

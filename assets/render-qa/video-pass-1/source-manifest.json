@@ -1,0 +1,18 @@
+{
+  "files": {
+    "block-dungeons.html": "ac0ad691054fe3d527141dceeef46ac0bc9e2c948614ed2e06552247ec671d22",
+    "world3d.js": "8017ffa84d5199e95133896a0a374f6be82a79ca5433395618993d9e8eff49f0",
+    "tests/combat-presentation.test.cjs": "3f670eccc7bb8225830698121aeb8686f89cc8faba3d53958ee48712b96aaf83",
+    "tests/character-rendering.test.cjs": "5cde5d96e63ef9e17e1fa74e2c36039a57a387d9de37fd1a3c02414d5ddca4ad",
+    "tests/mobile-aim.test.cjs": "e07ffa9209788c21ca91e401341d476f82bd037a1746a87bfb64064cdb4d0ebb"
+  },
+  "reference": {
+    "url": "https://www.bilibili.com/video/BV1Gtap6NEVp/",
+    "observed": [
+      "12:52 path and boundary",
+      "15:02 pickup light",
+      "18:44 contact shadow",
+      "21:03-21:25 combat and text"
+    ]
+  }
+}

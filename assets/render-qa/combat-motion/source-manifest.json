@@ -1,0 +1,66 @@
+{
+  "date": "2026-10-04",
+  "preserved": {
+    "modelsAndSkins": true,
+    "collisionPose": true,
+    "collisionRig": true
+  },
+  "files": [
+    {
+      "path": "block-dungeons.html",
+      "sha256": "c580f00dcbae4ef5d32ec1fdc40154f1b802d00d04360530c72b10392056c4bc"
+    },
+    {
+      "path": "combat-motion.js",
+      "sha256": "d3c7b32dcf9b8e2148e68586970cdb35b9afd98f2e096f2d98fdb6eda3bfa3d1"
+    },
+    {
+      "path": "weapon-models.js",
+      "sha256": "1839a33629590c0ed2959403d3dac002313d3585875fc03d808ab04535ab15c5"
+    },
+    {
+      "path": "weapon-gameplay.js",
+      "sha256": "6522b9b56f62c14c20c908e35bb65fac69ba31d6e52d6287406e57b1af82a8fb"
+    },
+    {
+      "path": "scene-style.js",
+      "sha256": "4819196f883cd3d25c85e46173cfe77d5fcd8a7de232255e590effeb620e0889"
+    },
+    {
+      "path": "world3d.js",
+      "sha256": "0b796771f823a36ba2cfadfa11f47ff4055215eb9cb06cb3bea858760d4bc401"
+    },
+    {
+      "path": "scenefx.js",
+      "sha256": "6797c90fd2ad477744ca505110104846bfc58421e2011596504a401cfa57e213"
+    }
+  ],
+  "regression": {
+    "passed": 153,
+    "failed": 0
+  },
+  "snapshot": "tools/refs/combat-motion-20261003/block-dungeons.html.before",
+  "browser": {
+    "pcViewport": "1280x720 outer / 1280x639 game",
+    "mobileViewport": "844x470 outer / 844x389 game",
+    "captures": [
+      "browser-greatsword-mobile.jpg",
+      "browser-sickles-mobile.jpg",
+      "browser-hammer-mobile.jpg",
+      "browser-hammer-pc.jpg",
+      "browser-greatsword-pc-final.jpg"
+    ],
+    "protectedUserGameTab": true,
+    "diagnostics": {
+      "ok": true,
+      "failed": false,
+      "lost": false,
+      "ctxLost": false,
+      "actorRenderer": "canvas",
+      "pcGameViewport": "1280x639",
+      "mobileGameViewport": "844x389",
+      "performanceClaim": false
+    },
+    "log": "browser-logs.json"
+  }
+}

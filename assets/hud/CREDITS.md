@@ -1,0 +1,36 @@
+# HUD 素材来源
+
+面板、圆形按钮、头像框、摇杆和首领血条框：内置 ImageGen，参考用户提供的手机与 PC HUD。完整提示词在同目录 `.prompt.txt`。
+
+图标：Lorc、Delapouite、sbed，来自 [Game-icons.net](https://game-icons.net)，[CC BY 3.0](https://creativecommons.org/licenses/by/3.0/)。保留原始图形路径，修改配色并栅格化成透明 PNG。图标与原作者清单：
+
+- attack: [lorc/crossed-swords](https://game-icons.net/1x1/lorc/crossed-swords.html)
+- roll: [lorc/run](https://game-icons.net/1x1/lorc/run.html)
+- potion: [delapouite/health-potion](https://game-icons.net/1x1/delapouite/health-potion.html)
+- potionGreen: [delapouite/health-potion](https://game-icons.net/1x1/delapouite/health-potion.html)
+- skill: [lorc/crystal-cluster](https://game-icons.net/1x1/lorc/crystal-cluster.html)
+- spell: [lorc/moon](https://game-icons.net/1x1/lorc/moon.html)
+- bag: [delapouite/backpack](https://game-icons.net/1x1/delapouite/backpack.html)
+- quest: [lorc/scroll-unfurled](https://game-icons.net/1x1/lorc/scroll-unfurled.html)
+- settings: [lorc/gears](https://game-icons.net/1x1/lorc/gears.html)
+- interact: [sbed/hand](https://game-icons.net/1x1/sbed/hand.html)
+- coin: [delapouite/two-coins](https://game-icons.net/1x1/delapouite/two-coins.html)
+- key: [lorc/key](https://game-icons.net/1x1/lorc/key.html)
+- hp: [lorc/heart-inside](https://game-icons.net/1x1/lorc/heart-inside.html)
+- mana: [lorc/crystal-cluster](https://game-icons.net/1x1/lorc/crystal-cluster.html)
+- shield: [sbed/shield](https://game-icons.net/1x1/sbed/shield.html)
+- boot: [lorc/boot-stomp](https://game-icons.net/1x1/lorc/boot-stomp.html)
+- heal: [sbed/health-normal](https://game-icons.net/1x1/sbed/health-normal.html)
+- pin: [delapouite/pin](https://game-icons.net/1x1/delapouite/pin.html)
+- compass: [lorc/compass](https://game-icons.net/1x1/lorc/compass.html)
+- fireball: [lorc/fireball](https://game-icons.net/1x1/lorc/fireball.html)
+- frost: [lorc/snowflake-1](https://game-icons.net/1x1/lorc/snowflake-1.html)
+- chain: [lorc/crystal-cluster](https://game-icons.net/1x1/lorc/crystal-cluster.html)
+- art0: [delapouite/dynamite](https://game-icons.net/1x1/delapouite/dynamite.html)
+- art1: [lorc/crystal-cluster](https://game-icons.net/1x1/lorc/crystal-cluster.html)
+- art2: [lorc/key](https://game-icons.net/1x1/lorc/key.html)
+- bow: [delapouite/bow-arrow](https://game-icons.net/1x1/delapouite/bow-arrow.html)
+- jump: [delapouite/jump-across](https://game-icons.net/1x1/delapouite/jump-across.html)
+- swap: [lorc/swap-bag](https://game-icons.net/1x1/lorc/swap-bag.html)
+- more: [lorc/scroll-unfurled](https://game-icons.net/1x1/lorc/scroll-unfurled.html)
+- star: [lorc/crystal-cluster](https://game-icons.net/1x1/lorc/crystal-cluster.html)

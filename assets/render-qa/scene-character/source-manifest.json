@@ -1,0 +1,11 @@
+{
+  "date": "2026-10-03",
+  "baseline": "tools/refs/scene-character-20261003/baseline.json",
+  "hashes": {
+    "block-dungeons.html": "d313c44881575162c443103872eca1db94208b3b93bc019649b535d91123f2f5",
+    "world3d.js": "0b796771f823a36ba2cfadfa11f47ff4055215eb9cb06cb3bea858760d4bc401",
+    "scenefx.js": "6797c90fd2ad477744ca505110104846bfc58421e2011596504a401cfa57e213",
+    "scene-style.js": "4819196f883cd3d25c85e46173cfe77d5fcd8a7de232255e590effeb620e0889",
+    "weapon-models.js": "1839a33629590c0ed2959403d3dac002313d3585875fc03d808ab04535ab15c5"
+  }
+}

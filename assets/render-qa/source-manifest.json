@@ -1,0 +1,21 @@
+{
+  "date": "2026-10-03",
+  "records": [
+    {
+      "file": "block-dungeons.html",
+      "beforeBytes": 540564,
+      "afterBytes": 507367,
+      "beforeLines": 6024,
+      "afterLines": 5642,
+      "sha256": "b66676bcfc6c4dbdebe6d520e86f0911726f401deb9c0479fc55a78fe15eacd4"
+    },
+    {
+      "file": "world3d.js",
+      "beforeBytes": 44075,
+      "afterBytes": 38384,
+      "beforeLines": 761,
+      "afterLines": 629,
+      "sha256": "b2d75fe50dc39aaae1a8feefdfd959657010cc27b90e15cda731df5aed847536"
+    }
+  ]
+}

@@ -1,0 +1,33 @@
+{
+  "canonicalMeshes": [
+    {
+      "variant": 0,
+      "cells": 99,
+      "triangles": 440,
+      "vertices": 880,
+      "materials": [
+        "dungeon-solid:false"
+      ]
+    },
+    {
+      "variant": 1,
+      "cells": 126,
+      "triangles": 484,
+      "vertices": 968,
+      "materials": [
+        "dungeon-solid:false"
+      ]
+    },
+    {
+      "variant": 2,
+      "cells": 144,
+      "triangles": 548,
+      "vertices": 1096,
+      "materials": [
+        "dungeon-solid:false"
+      ]
+    }
+  ],
+  "texture": "No texture maps; baked voxel vertex colors",
+  "placement": "Three cached meshes merged with non-occluding terrain by chunk; full-footprint radius 8/24 before instance scaling"
+}

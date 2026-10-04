@@ -1,0 +1,40 @@
+const fs = require('node:fs');
+const vm = require('node:vm');
+const path = require('node:path');
+
+const root = path.resolve(__dirname, '..');
+function loadGame(options = {}) {
+  const events = {};
+  const noop = () => {};
+  const gradient = { addColorStop: noop };
+  const width=options.width||1280,height=options.height||760;
+  const ctx = options.canvas?options.canvas.getContext('2d'):new Proxy({ measureText: s => ({ width: String(s).length * 8 }), createLinearGradient: () => gradient, createRadialGradient: () => gradient, createImageData: (w,h) => ({data:new Uint8ClampedArray(w*h*4)}), createPattern: () => null }, { get: (o, k) => o[k] || noop });
+  const canvas = options.canvas||{width,height,getContext:()=>ctx};
+  canvas.addEventListener=(k,f)=>{(events[k]||=[]).push(f);};canvas.getBoundingClientRect=()=>({left:0,top:0,width,height});
+  let seed = 739;
+  const math = Object.create(Math);
+  math.random = () => ((seed = (seed * 1664525 + 1013904223) >>> 0) / 4294967296);
+  const sandbox = { console, Math: math, performance: { now: () => 1000 }, innerWidth: width, innerHeight: height, navigator: { maxTouchPoints: 0 }, location: { search: options.lab ? '?weaponLab=1&weapon='+(options.weapon || 'greatsword') : '', origin:'http://localhost' }, URLSearchParams, document: { getElementById: () => canvas, createElement: () => options.createCanvas?options.createCanvas(1,1):({...canvas}), hidden: false, addEventListener: (k, f) => { (events[k] ||= []).push(f); } }, localStorage: { getItem: () => null, setItem: noop }, matchMedia: query => ({ matches: query==='(prefers-reduced-motion: reduce)'&&!!options.reducedMotion }), addEventListener: (k, f) => { (events[k] ||= []).push(f); }, requestAnimationFrame: noop, setTimeout: noop, Image: options.Image||class {} };
+  sandbox.window = sandbox;
+  for (const [name, file] of [['CombatRules', 'combat-rules.js'], ['WeaponGameplay', 'weapon-gameplay.js']]) if (fs.existsSync(path.join(root, file))) sandbox[name] = require(path.join(root, file));
+  sandbox.HUDLayout=require(path.join(root,'hud-layout.js'));
+  sandbox.InventoryLayout=require(path.join(root,'inventory-layout.js'));
+  sandbox.SceneStyle=require(path.join(root,'scene-style.js'));
+  sandbox.DungeonMap=require(path.join(root,'dungeon-map.js'));
+  sandbox.DungeonJourney=require(path.join(root,'dungeon-journey.js'));
+  sandbox.CrowdGrid=require(path.join(root,'crowd-grid.js'));
+  sandbox.CombatMotion=require(path.join(root,'combat-motion.js'));
+  const context = vm.createContext(sandbox);
+  vm.runInContext(fs.readFileSync(path.join(root,'ui-motion.js'),'utf8'),context,{filename:'ui-motion.js'});
+  vm.runInContext(fs.readFileSync(path.join(root,'hud-controller.js'),'utf8'),context,{filename:'hud-controller.js'});
+  vm.runInContext(fs.readFileSync(path.join(root,'dungeon-journey-runtime.js'),'utf8'),context,{filename:'dungeon-journey-runtime.js'});
+  for(const file of ['ui-kit.js','inventory-assets.js','inventory-controller.js','inventory-ui.js'])vm.runInContext(fs.readFileSync(path.join(root,file),'utf8'),context,{filename:file});
+  const html = fs.readFileSync(path.join(root, 'block-dungeons.html'), 'utf8');
+  const source = [...html.matchAll(/<script\b[^>]*>([\s\S]*?)<\/script>/g)].map(m => m[1]).filter(Boolean).join('\n');
+  vm.runInContext(source, context, { filename: 'block-dungeons.html', timeout: 5000 });
+  const run = code => vm.runInContext(code, context, { timeout: 5000 });
+  run(`mobs=[]; items=[]; chests=[]; shots=[]; parts=[]; texts=[]; bolts=[]; booms=[]; rings=[]; rooms=[]; torches=[]; theme=THEMES[0]; player = newPlayer(); state = 'play'; player.eq.weapon = newBase('weapon',0,'daggers'); player.eq.weapon.uid=71; player.weapon = 'daggers'; player.x = 5; player.y = 5; player.atkDef = WEAPONS.daggers.combo[0]; player.combo = 0; player.hitSet = new Set(); player.G.wMin = player.G.wMax = 10; player.G.effFrw = 0; player.G.effFcr = 0; player.trail = []; G = new Uint8Array(GW*GH).fill(1); terrain=null; dungeonMap=null;`);
+  return { run, context, events };
+}
+const mobCode = `({type:'zombie',x:6,y:5,r:.3,scale:1,hp:100,maxhp:100,mass:1,poise:99,ang:Math.PI,st:'idle',t:0,vx:0,vy:0,z:0,flash:0,frozen:0,walk:0,spd:1,dmg:1,awake:true})`;
+module.exports = { loadGame, mobCode };

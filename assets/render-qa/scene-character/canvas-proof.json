@@ -1,0 +1,18 @@
+{
+  "renderer": "Actual production Canvas rigs; distribution diagram is a placement plan, not a GPU render.",
+  "densityCounts": [
+    24,
+    43,
+    57
+  ],
+  "skins": [
+    "akane",
+    "yoru",
+    "yuki"
+  ],
+  "weapons": [
+    "greatsword",
+    "sickles",
+    "hammer"
+  ]
+}

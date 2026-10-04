@@ -1,0 +1,41 @@
+<!doctype html><html lang="zh"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>方块地牢 · 五种场景与高低差</title>
+<style>html,body{margin:0;height:100%;background:#05050a;color:#e2ded6;font-family:Microsoft YaHei,sans-serif;overflow:hidden}canvas#c{position:fixed;inset:0;pointer-events:none}header{position:fixed;left:20px;top:18px;z-index:3;padding:14px 18px;background:#131820ed;border:1px solid #536071;border-radius:6px;max-width:calc(100% - 78px)}h1{font-size:20px;margin:0 0 10px}nav{display:flex;gap:6px;flex-wrap:wrap}a,button,input{font:inherit;font-size:12px;color:#dac99f;background:#252b35;border:1px solid #596270;padding:7px 10px;text-decoration:none;border-radius:3px}a[aria-current=true]{background:#635032;border-color:#c8a66f;color:#ffe5b8}p{margin:10px 0 0;font-size:12px;color:#b5beca}.tools{margin-top:8px;display:flex;gap:6px;align-items:center;flex-wrap:wrap}input{width:65px;padding:7px}aside{position:fixed;bottom:18px;right:20px;background:#11161dea;border:1px solid #536071;padding:10px;z-index:3}#map{display:block;width:220px;height:170px}output{position:fixed;bottom:20px;left:22px;font-size:12px;line-height:1.8;z-index:3;background:#11161dcf;padding:10px 14px;border-left:2px solid #a8844a}@media(max-width:750px){header{left:10px;top:10px;padding:10px;max-width:calc(100% - 42px)}h1{font-size:16px}a,button,input{padding:5px 7px}aside{display:none}output{left:10px;bottom:10px;max-width:calc(100% - 50px);font-size:11px}}</style></head>
+<body><canvas id="c"></canvas><header><h1>五种场景 · 平台与坡道</h1><nav id="themes" aria-label="选择场景"></nav><div class="tools"><a id="before">原场景</a><a id="after">优化后</a><label>种子 <input id="seed" type="number" min="0" max="99999" value="41"></label><button id="regenerate">重建地图</button><button id="walk">沿坡道行走</button><a id="play">试玩本场景 ↗</a></div><p>石台与低地之间有连续坡道 · 右下方颜色越亮，高度越高</p></header><aside><canvas id="map" width="220" height="170"></canvas></aside><output id="status">正在绘制场景</output>
+<script src="/vendor/voxel-world.js"></script><script src="/scene-style.js"></script><script src="/stone-material.js"></script><script src="/dungeon-map.js"></script>
+<script>
+(async()=>{
+  Object.defineProperty(performance,'now',{value:()=>1000});
+  const q=new URLSearchParams(location.search),names=['苔石地牢','幽深矿井','冰封洞窟','下界要塞','沙海遗迹'],name=names.includes(q.get('theme'))?q.get('theme'):names[0],before=q.get('version')==='before',seed=Number(q.get('seed'))||41;
+  const url=(theme,version,sd=seed)=>'?'+new URLSearchParams({theme,version,seed:sd});
+  const nav=document.getElementById('themes');for(const n of names){const a=document.createElement('a');a.textContent=n;a.href=url(n,before?'before':'after');a.setAttribute('aria-current',String(n===name));nav.append(a);}
+  document.getElementById('before').href=url(name,'before');document.getElementById('after').href=url(name,'after');document.getElementById('seed').value=seed;
+  document.getElementById('regenerate').onclick=()=>location.href=url(name,before?'before':'after',Number(document.getElementById('seed').value)>>>0);
+  document.getElementById('play').href='/block-dungeons.html?'+new URLSearchParams({weaponLab:'1',weapon:'greatsword',terrainLab:'1',floor:names.indexOf(name)+1,mapSeed:seed});
+  const load=src=>new Promise((resolve,reject)=>{const s=document.createElement('script');s.src=src;s.onload=resolve;s.onerror=reject;document.head.append(s);});
+  await load(before?'/assets/render-qa/terrain-elevation/scene-assets-before.js':'/scene-assets.js?v=4');await load(before?'/assets/render-qa/terrain-elevation/world3d-before.js':'/world3d.js?v=23');
+  const m=DungeonMap.generate({seed,nMain:7,nSide:3}),terrain=DungeonMap.buildTerrain(m),high=m.rooms.find(r=>r.height>0&&r.conn.some(n=>m.rooms[n].height<r.height)),low=m.rooms[high.conn.find(n=>m.rooms[n].height<high.height)];
+  const cam={x:(high.cx+low.cx+1)/2,y:(high.cy+low.cy+1)/2},torches=m.torches;
+  const highPlay=document.createElement('a');highPlay.textContent='从高台试玩 ↗';highPlay.href=document.getElementById('play').href+'&start=high';document.querySelector('.tools').append(highPlay);
+  const o={...m,terrain:before?null:terrain,theme:{name},cam,torches,player:{x:low.cx+.5,y:low.cy+.5,G:{}},exitOpen:false};
+  const start=low.cy*m.GW+low.cx,target=high.cy*m.GW+high.cx,queue=[start],prev=new Int32Array(m.G.length).fill(-1);prev[start]=start;
+  for(let h=0;h<queue.length&&!queue.includes(target);h++){const i=queue[h],x=i%m.GW,y=Math.floor(i/m.GW);for(const [dx,dy] of [[1,0],[-1,0],[0,1],[0,-1]]){const a=x+dx,b=y+dy,k=b*m.GW+a;if(a>=0&&b>=0&&a<m.GW&&b<m.GH&&prev[k]<0&&DungeonMap.canStep(terrain,x,y,a,b)){prev[k]=i;queue.push(k);}}}
+  const route=[];for(let i=target;i!==start&&i>=0;i=prev[i])route.unshift([i%m.GW+.5,Math.floor(i/m.GW)+.5]);route.unshift([low.cx+.5,low.cy+.5]);
+  let moving=false,progress=0,last=performance.now(),ok=false;
+  document.getElementById('walk').onclick=()=>{moving=!moving;progress=0;document.getElementById('walk').textContent=moving?'停止行走':'沿坡道行走';};
+  const ctx=document.getElementById('c').getContext('2d'),mini=document.getElementById('map').getContext('2d');
+  const ground=(x,y)=>before?0:DungeonMap.heightAt(terrain,x,y);
+  function draw(now){const dt=Math.min(.1,(now-last)/1000);last=now;
+    const width=Math.abs(high.cx-low.cx)+(high.w+low.w)/2+3,height=Math.abs(high.cy-low.cy)+(high.h+low.h)/2+4;
+    o.zoom=Math.min((innerWidth-50)/(width*44),(innerHeight-165)/(height*32));o.ox=innerWidth/(2*o.zoom)-cam.x*44;o.oy=(innerHeight/2+48)/o.zoom-cam.y*32+ground(cam.x,cam.y)*38;
+    if(moving){progress=(progress+dt*2.8)%(route.length-1);const i=Math.floor(progress),t=progress-i;o.player.x=route[i][0]+(route[i+1][0]-route[i][0])*t;o.player.y=route[i][1]+(route[i+1][1]-route[i][1])*t;}
+    ok=World3D.frame(o);const canvas=ctx.canvas;canvas.width=innerWidth;canvas.height=innerHeight;
+    const project=(x,y,z=0)=>[(o.ox+x*44)*o.zoom,(o.oy+y*32-(ground(x,y)+z)*38)*o.zoom];
+    for(const [r,label] of [[low,'低地'],[high,'石台']]){const p=project(r.cx+.5,r.cy+.5,.04);ctx.fillStyle='rgba(10,16,24,.8)';ctx.fillRect(p[0]-29,p[1]-13,58,25);ctx.font='bold 12px Microsoft YaHei';ctx.fillStyle=r===high?'#eccb87':'#c3d4e2';ctx.textAlign='center';ctx.fillText(before?'平地':label,p[0],p[1]+4);}
+    if(moving){const p=project(o.player.x,o.player.y,.06);ctx.strokeStyle='#80f3df';ctx.lineWidth=2;ctx.beginPath();ctx.ellipse(p[0],p[1],7,5,0,0,7);ctx.stroke();}
+    mini.clearRect(0,0,220,170);for(let y=0;y<m.GH;y++)for(let x=0;x<m.GW;x++)if(m.G[y*m.GW+x]){const h=terrain.H[y*m.GW+x];mini.fillStyle=before?'#718291':h>.9?'#dcc48b':h>.3?'#9aacb9':'#526779';mini.fillRect(x*2,y*2,2,2);}
+    mini.strokeStyle='#80f3df';mini.lineWidth=1;mini.strokeRect((cam.x-width/2)*2,(cam.y-height/2)*2,width*2,height*2);
+    const d=World3D.diag(o.player.x,o.player.y);document.getElementById('status').textContent=(ok?'场景已绘制':'绘制失败')+' · '+name+' · '+(before?'平地':m.rooms.filter(r=>r.height>0).length+' 个高处房间')+'\n'+m.rooms.length+' 个连通房间 · '+d.meshes+' 批次 · '+d.tris+' 三角形'+(moving?' · 当前高度 '+ground(o.player.x,o.player.y).toFixed(2):'');
+    requestAnimationFrame(draw);
+  }requestAnimationFrame(draw);
+})();
+</script></body></html>

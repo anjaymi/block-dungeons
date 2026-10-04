@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="zh-CN">
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>第二轮性能优化 · 本轮前后对照</title>
+<style>
+*{box-sizing:border-box}body{margin:0;padding:24px;background:#141820;color:#e5e9ef;font:15px/1.5 system-ui,sans-serif}main{max-width:1328px;margin:auto}h1{font-size:24px;margin:0 0 8px}p{color:#adb8c9;margin:8px 0 18px}.controls{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin:18px 0}select,button,a{font:inherit;padding:9px 14px;border-radius:6px;border:1px solid #445064;background:#232d3c;color:inherit}button{cursor:pointer;background:#a1e4cc;color:#153128;font-weight:700}a{text-decoration:none}button:disabled{opacity:.5;cursor:wait}table{width:100%;border-collapse:collapse;margin:18px 0}th,td{text-align:left;padding:10px 14px;border-bottom:1px solid #364153}th{color:#aab8ca}#status{color:#a1e4cc;min-height:24px}#stage{position:relative;width:100%;overflow:hidden;background:#080b12;border:1px solid #364153;border-radius:8px}iframe{border:0;width:1280px;height:720px;transform-origin:top left;position:absolute;inset:0}.note{font-size:13px}.table{overflow:auto}
+</style>
+<main>
+<h1>第二轮性能优化 · 本轮前后对照</h1>
+<p>比较上次优化完成时的版本和这次的版本。固定地图、怪物组成与 1280 × 720 画面，保留全部怪物、动画和战斗模拟。</p>
+<div class="controls"><label>怪物数量 <select id="count"><option selected>96</option><option>192</option></select></label><label>版本 <select id="version"><option value="current">本轮优化后</option><option value="baseline">本轮开始前</option></select></label><button id="run">运行一次复测</button><a href="/block-dungeons.html">进入正常游戏</a></div>
+<div id="status">先预热 15 帧，再采样 120 帧。保持窗口可见，通常需要约 3～40 秒。</div>
+<div class="table"><table><thead><tr><th>怪物数量</th><th>版本</th><th>实际平均帧率</th><th>帧间隔中位数</th><th>较慢帧（95%）</th><th>逻辑与绘制耗时</th></tr></thead><tbody id="results"></tbody></table></div>
+<div id="stage"><iframe id="game" title="同地图怪物压力场景"></iframe></div>
+<p class="note">平均帧率按实际帧间隔的平均值计算，包含掉帧。表中的已测结果来自同一台 RTX 3070 Ti 设备的独立游戏页面；内嵌预览复测会受页面合成开销影响。首次进入会初始化素材，结果随设备与当前负载变化。</p>
+</main>
+<script>
+const frame=document.querySelector('#game'),stage=document.querySelector('#stage'),run=document.querySelector('#run'),status=document.querySelector('#status'),results=document.querySelector('#results');
+const resize=()=>{const scale=Math.min(1,stage.clientWidth/1280);stage.style.height=720*scale+'px';frame.style.transform='scale('+scale+')';};new ResizeObserver(resize).observe(stage);resize();
+const fps=r=>1000/r.frameIntervalMs.mean;
+const row=(count,label,r)=>{const tr=document.createElement('tr');for(const value of [count,label,fps(r).toFixed(1)+' FPS',r.frameIntervalMs.median.toFixed(1)+' ms',r.frameIntervalMs.p95.toFixed(1)+' ms',r.cpuMs.median.toFixed(1)+' ms']){const td=document.createElement('td');td.textContent=value;tr.append(td);}results.append(tr);};
+fetch('/assets/render-qa/performance-round2/comparison.json').then(r=>r.ok?r.json():null).then(data=>{if(data)for(const pair of data.runs){row(pair.count,'已测 · 本轮开始前',pair.baseline);row(pair.count,'已测 · 本轮优化后',pair.candidate);}}).catch(()=>{});
+run.onclick=async()=>{
+  run.disabled=true;const count=Number(document.querySelector('#count').value),baseline=document.querySelector('#version').value==='baseline';status.textContent='正在载入固定场景…';
+  try{
+    await new Promise((resolve,reject)=>{frame.onload=resolve;frame.onerror=reject;frame.src=baseline?'/assets/render-qa/performance-round2/baseline/block-dungeons.html':'/block-dungeons.html';});
+    const source=await(await fetch('/tests/performance-scenario.js')).text();frame.contentWindow.eval(source);
+    await frame.contentWindow.GamePerformance.prepare(count);status.textContent='正在采样，请保持此窗口可见…';
+    const report=await frame.contentWindow.GamePerformance.sample(120,15);row(count,baseline?'复测 · 本轮开始前':'复测 · 本轮优化后',report);
+    status.textContent='测量完成 · '+report.alive+' 只怪物 · 平均 '+fps(report).toFixed(1)+' FPS';
+  }catch(error){status.textContent='测量未完成：'+error.message;}
+  finally{run.disabled=false;}
+};
+</script>
+</html>

@@ -1,0 +1,94 @@
+[
+  {
+    "level": "error",
+    "message": "Uncaught TypeError: Failed to execute 'observe' on 'MutationObserver': parameter 1 is not of type 'Node'.",
+    "timestamp": "2026-10-03T15:21:00.997Z"
+  },
+  {
+    "level": "log",
+    "message": "[World3D] ready · three r186",
+    "timestamp": "2026-10-03T15:22:30.116Z",
+    "url": "http://127.0.0.1:8000/world3d.js?v=19"
+  },
+  {
+    "level": "log",
+    "message": "[World3D] 构建完成 苔石地牢 · 1387 实例 / 40 批次 · 478ms",
+    "timestamp": "2026-10-03T15:22:30.604Z",
+    "url": "http://127.0.0.1:8000/world3d.js?v=19"
+  },
+  {
+    "level": "error",
+    "message": "Uncaught TypeError: Failed to execute 'observe' on 'MutationObserver': parameter 1 is not of type 'Node'.",
+    "timestamp": "2026-10-03T15:28:22.031Z"
+  },
+  {
+    "level": "log",
+    "message": "[World3D] ready · three r186",
+    "timestamp": "2026-10-03T15:30:02.371Z",
+    "url": "http://127.0.0.1:8000/world3d.js?v=19"
+  },
+  {
+    "level": "log",
+    "message": "[World3D] 构建完成 苔石地牢 · 1293 实例 / 38 批次 · 416ms",
+    "timestamp": "2026-10-03T15:30:02.799Z",
+    "url": "http://127.0.0.1:8000/world3d.js?v=19"
+  },
+  {
+    "level": "log",
+    "message": "[World3D] diag {\"wlAlphaOK\":true,\"lost\":false,\"failed\":false,\"ok\":true,\"vis\":\"visible\",\"gl\":\"ANGLE (NVIDIA, NVIDIA GeForce RTX 3070 Ti (0x00002482) Direct3D11 vs_5_0 ps_5_0, D3D11)\",\"size\":\"1280x639\",\"PR\":1,\"zoom\":1.8497368421052633,\"actorRenderer\":\"canvas\",\"ctxLost\":false,\"meshes\":38,\"verts\":2428338,\"floorNear\":\"1/1\",\"calls\":38,\"tris\":809446}",
+    "timestamp": "2026-10-03T15:30:21.760Z",
+    "url": "http://127.0.0.1:8000/block-dungeons.html?weaponLab=1&weapon=greatsword&session=1"
+  },
+  {
+    "level": "log",
+    "message": "[World3D] diag {\"wlAlphaOK\":true,\"lost\":false,\"failed\":false,\"ok\":true,\"vis\":\"visible\",\"gl\":\"ANGLE (NVIDIA, NVIDIA GeForce RTX 3070 Ti (0x00002482) Direct3D11 vs_5_0 ps_5_0, D3D11)\",\"size\":\"844x389\",\"PR\":1,\"zoom\":1.6500000000000001,\"actorRenderer\":\"canvas\",\"ctxLost\":false,\"meshes\":38,\"verts\":2428338,\"floorNear\":\"1/1\",\"calls\":38,\"tris\":809446}",
+    "timestamp": "2026-10-03T15:33:27.739Z",
+    "url": "http://127.0.0.1:8000/block-dungeons.html?weaponLab=1&weapon=greatsword&session=1"
+  },
+  {
+    "level": "error",
+    "message": "Uncaught TypeError: Failed to execute 'observe' on 'MutationObserver': parameter 1 is not of type 'Node'.",
+    "timestamp": "2026-10-03T15:35:30.599Z"
+  },
+  {
+    "level": "log",
+    "message": "[World3D] ready · three r186",
+    "timestamp": "2026-10-03T15:37:38.230Z",
+    "url": "http://127.0.0.1:8000/world3d.js?v=19"
+  },
+  {
+    "level": "log",
+    "message": "[World3D] 构建完成 苔石地牢 · 1349 实例 / 32 批次 · 434ms",
+    "timestamp": "2026-10-03T15:37:38.673Z",
+    "url": "http://127.0.0.1:8000/world3d.js?v=19"
+  },
+  {
+    "level": "error",
+    "message": "Uncaught TypeError: Failed to execute 'observe' on 'MutationObserver': parameter 1 is not of type 'Node'.",
+    "timestamp": "2026-10-03T15:42:07.392Z"
+  },
+  {
+    "level": "log",
+    "message": "[World3D] ready · three r186",
+    "timestamp": "2026-10-03T15:43:31.454Z",
+    "url": "http://127.0.0.1:8000/world3d.js?v=19"
+  },
+  {
+    "level": "log",
+    "message": "[World3D] 构建完成 苔石地牢 · 1164 实例 / 23 批次 · 480ms",
+    "timestamp": "2026-10-03T15:43:31.948Z",
+    "url": "http://127.0.0.1:8000/world3d.js?v=19"
+  },
+  {
+    "level": "log",
+    "message": "[World3D] diag {\"wlAlphaOK\":true,\"lost\":false,\"failed\":false,\"ok\":true,\"vis\":\"visible\",\"gl\":\"ANGLE (NVIDIA, NVIDIA GeForce RTX 3070 Ti (0x00002482) Direct3D11 vs_5_0 ps_5_0, D3D11)\",\"size\":\"1280x639\",\"PR\":1,\"zoom\":1.8497368421052633,\"actorRenderer\":\"canvas\",\"ctxLost\":false,\"meshes\":23,\"verts\":2230998,\"floorNear\":\"1/1\",\"calls\":23,\"tris\":743666}",
+    "timestamp": "2026-10-03T15:44:51.173Z",
+    "url": "http://127.0.0.1:8000/block-dungeons.html?weaponLab=1&weapon=greatsword&session=1"
+  },
+  {
+    "level": "log",
+    "message": "[World3D] diag {\"wlAlphaOK\":true,\"lost\":false,\"failed\":false,\"ok\":true,\"vis\":\"visible\",\"gl\":\"ANGLE (NVIDIA, NVIDIA GeForce RTX 3070 Ti (0x00002482) Direct3D11 vs_5_0 ps_5_0, D3D11)\",\"size\":\"844x389\",\"PR\":1,\"zoom\":1.6500000000000001,\"actorRenderer\":\"canvas\",\"ctxLost\":false,\"meshes\":23,\"verts\":2230998,\"floorNear\":\"1/1\",\"calls\":23,\"tris\":743666}",
+    "timestamp": "2026-10-03T15:45:42.055Z",
+    "url": "http://127.0.0.1:8000/block-dungeons.html?weaponLab=1&weapon=greatsword&session=1"
+  }
+]

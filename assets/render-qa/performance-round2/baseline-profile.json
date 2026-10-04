@@ -1,0 +1,44 @@
+{
+  "collideCircle": {
+    "calls": 2378,
+    "callsPerFrame": 396.3333333333333,
+    "ms": 1.5999999642372131,
+    "msPerFrame": 0.2666666607062022
+  },
+  "drawBox": {
+    "calls": 69477,
+    "callsPerFrame": 11579.5,
+    "ms": 322.19999969005585,
+    "msPerFrame": 53.69999994834264
+  },
+  "drawNormalFace": {
+    "calls": 40026,
+    "callsPerFrame": 6671,
+    "ms": 140.0000004172325,
+    "msPerFrame": 23.33333340287209
+  },
+  "drawTexFace": {
+    "calls": 8991,
+    "callsPerFrame": 1498.5,
+    "ms": 26.50000002980232,
+    "msPerFrame": 4.41666667163372
+  },
+  "los": {
+    "calls": 2003,
+    "callsPerFrame": 333.8333333333333,
+    "ms": 3.399999976158142,
+    "msPerFrame": 0.5666666626930237
+  },
+  "mobRig": {
+    "calls": 576,
+    "callsPerFrame": 96,
+    "ms": 14.999999910593033,
+    "msPerFrame": 2.499999985098839
+  },
+  "stepMob": {
+    "calls": 1152,
+    "callsPerFrame": 192,
+    "ms": 15.499999970197678,
+    "msPerFrame": 2.5833333283662796
+  }
+}

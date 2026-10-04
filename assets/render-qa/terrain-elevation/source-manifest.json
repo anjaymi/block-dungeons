@@ -1,0 +1,159 @@
+{
+  "date": "2026-10-04",
+  "tests": 179,
+  "sourceHashes": {
+    "block-dungeons.html": "7b4b0ee5c2fa1e4990cf761bd4397734405053b60f0bde5ce2fd98a62dd9db9f",
+    "dungeon-map.js": "b4307fd39dce9c623bbf8413bbf55db93441accee4c2b9e70c2f9041f0d59d7f",
+    "world3d.js": "00e2ae7afb36b88de2655110b04d988b2dd7105894a42a380accebb0cf5b06ac",
+    "scene-assets.js": "fd9c79081de5cc9caad5972aedffdc2dc27105925d3670f1e158a70a69676815",
+    "tests/terrain-review.html": "0a01746ce8ba860aa82490e92cd773b80fe94a1644f2ecf2095f3757975b4ae1"
+  },
+  "protectedHashes": {
+    "combat-motion.js": "d3c7b32dcf9b8e2148e68586970cdb35b9afd98f2e096f2d98fdb6eda3bfa3d1",
+    "weapon-models.js": "1839a33629590c0ed2959403d3dac002313d3585875fc03d808ab04535ab15c5",
+    "weapon-gameplay.js": "6522b9b56f62c14c20c908e35bb65fac69ba31d6e52d6287406e57b1af82a8fb",
+    "scene-style.js": "4819196f883cd3d25c85e46173cfe77d5fcd8a7de232255e590effeb620e0889",
+    "scenefx.js": "6797c90fd2ad477744ca505110104846bfc58421e2011596504a401cfa57e213",
+    "stone-material.js": "83b604176ae547c9f47cc6274bd3faf5e79089edaf13abfdfd5ce4a8bf162f64"
+  },
+  "embeddedTextures": {
+    "count": 18,
+    "unchanged": true,
+    "sha256": [
+      "451ef9aefc94dce9d22431e56a201d366a2f321153493ec6d80b1b696c49c9d1",
+      "d12d11ef42c618287232ddecc439b0c18ae0a1e9d289d3c08eb180f2ead2a885",
+      "217f8c551939ae86faf9e1a966ac0ecd5d682c8a2f9d0615b38512c29b54dad6",
+      "9f89e8f090961062d5608ec9cff4a71338f96e91374a8d368901147193dd837d",
+      "cd8b4b645d878f3af08d00b773ce1ef2ff0d1992671096a96ecbfdaf06866b6c",
+      "5a632280bf9b3473c4f8cfc34c99a8635233bc2ba99d0136f9da252996567b86",
+      "4983cd12ef6fb37c0c91b520d2eecb4ef9bac800b3a664dac6e266efe323b985",
+      "c45a26100b29b86a76650869d336cec4931b30532586015b9efa8b951bc30a6b",
+      "611835c1ecf3a7074c0ef621c178a167302a7cf70509756ab89893de229a19af",
+      "3da00a186f1a6072a1cccb04122c906547e88a951ddc53000398379a8e5763a9",
+      "f59c8a1f55ac8ed5a0fd9f8004b5bef5e7954c20a4fc1dc34c8527f730eca7bd",
+      "96bc1ea93f5311b6682f9ca5ec0ff65551a1604320fc5797397b332b4ad77a1b",
+      "11475c40e8867e233c3053eda8c7db56c26703f1adc9a884d06aa4affca6c2f4",
+      "cb84000088e42c106906449dfa564365b369f03d955fc4879e8fe7dc424d2650",
+      "96db9c422f22c43a3c23369b71b99ab9146a7159a82c7e7758aa069bae78bfe6",
+      "f456296cb24f14ab823adb5662d8815b23530a565d684f711f6fc26da9a7a939",
+      "98f9d3dabde6be4b23115d996dfaf0743b58e0dafe13ba6d8769667094ed1510",
+      "3ffab86263fae2f77e9c0c6f60a24dea9430cbae738226f46d72b7c029ba2252"
+    ]
+  },
+  "metrics": [
+    {
+      "theme": "苔石地牢",
+      "before": {
+        "batches": 73,
+        "triangles": 559726
+      },
+      "after": {
+        "batches": 73,
+        "triangles": 566182
+      }
+    },
+    {
+      "theme": "幽深矿井",
+      "before": {
+        "batches": 49,
+        "triangles": 617010
+      },
+      "after": {
+        "batches": 70,
+        "triangles": 337484
+      }
+    },
+    {
+      "theme": "冰封洞窟",
+      "before": {
+        "batches": 85,
+        "triangles": 588656
+      },
+      "after": {
+        "batches": 72,
+        "triangles": 341380
+      }
+    },
+    {
+      "theme": "下界要塞",
+      "before": {
+        "batches": 80,
+        "triangles": 811674
+      },
+      "after": {
+        "batches": 90,
+        "triangles": 352012
+      }
+    },
+    {
+      "theme": "沙海遗迹",
+      "before": {
+        "batches": 56,
+        "triangles": 417376
+      },
+      "after": {
+        "batches": 69,
+        "triangles": 349494
+      }
+    }
+  ],
+  "viewport": {
+    "scene": [
+      1280,
+      800
+    ],
+    "mobile": [
+      844,
+      470
+    ]
+  },
+  "gameDiagnostics": [
+    {
+      "url": "http://127.0.0.1:8000/block-dungeons.html?weaponLab=1&weapon=greatsword&terrainLab=1&floor=1&mapSeed=41&start=high&hud=mobile",
+      "wlAlphaOK": true,
+      "lost": false,
+      "failed": false,
+      "ok": true,
+      "vis": "visible",
+      "gl": "ANGLE (NVIDIA, NVIDIA GeForce RTX 3070 Ti (0x00002482) Direct3D11 vs_5_0 ps_5_0, D3D11)",
+      "size": "844x470",
+      "PR": 1,
+      "zoom": 1.6500000000000001,
+      "actorRenderer": "canvas",
+      "ctxLost": false,
+      "meshes": 51,
+      "verts": 1040004,
+      "floorNear": "0/0",
+      "calls": 51,
+      "tris": 346668
+    },
+    {
+      "url": "http://127.0.0.1:8000/block-dungeons.html?weaponLab=1&weapon=greatsword&terrainLab=1&floor=1&mapSeed=41&start=high&hud=pc",
+      "wlAlphaOK": true,
+      "lost": false,
+      "failed": false,
+      "ok": true,
+      "vis": "visible",
+      "gl": "ANGLE (NVIDIA, NVIDIA GeForce RTX 3070 Ti (0x00002482) Direct3D11 vs_5_0 ps_5_0, D3D11)",
+      "size": "1280x800",
+      "PR": 1,
+      "zoom": 2.2,
+      "actorRenderer": "canvas",
+      "ctxLost": false,
+      "meshes": 51,
+      "verts": 1040004,
+      "floorNear": "1/1",
+      "calls": 51,
+      "tris": 346668
+    }
+  ],
+  "limitations": [
+    "Desktop GPU at mobile viewport; not a physical-phone benchmark",
+    "Single height field; platforms and ramps, no stacked bridge surfaces",
+    "WFC constrains room elevation domains; not decorative texture tiles"
+  ],
+  "references": [
+    "https://cs.nyu.edu/~perlin/noise/",
+    "https://github.com/mxgmn/WaveFunctionCollapse"
+  ]
+}

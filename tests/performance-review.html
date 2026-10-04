@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="zh-CN">
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>怪物密集场景 · 性能对照</title>
+<style>
+*{box-sizing:border-box}body{margin:0;padding:24px;background:#141820;color:#e5e9ef;font:15px/1.5 system-ui,sans-serif}main{max-width:1328px;margin:auto}h1{font-size:24px;margin:0 0 8px}p{color:#adb8c9;margin:8px 0 18px}.controls{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin:18px 0}select,button{font:inherit;padding:9px 14px;border-radius:6px;border:1px solid #445064;background:#232d3c;color:inherit}button{cursor:pointer;background:#a1e4cc;color:#153128;font-weight:700}button:disabled{opacity:.5;cursor:wait}table{width:100%;border-collapse:collapse;margin:18px 0}th,td{text-align:left;padding:10px 14px;border-bottom:1px solid #364153}th{color:#aab8ca}#status{color:#a1e4cc;min-height:24px}#stage{position:relative;width:100%;overflow:hidden;background:#080b12;border:1px solid #364153;border-radius:8px}iframe{border:0;width:1280px;height:720px;transform-origin:top left;position:absolute;inset:0}.note{font-size:13px}
+</style>
+<main>
+<h1>怪物密集场景 · 性能对照</h1>
+<p>相同地图、怪物组成和分辨率，对比优化前后的实际帧耗时。压力场景给予角色足够生命，保留全部怪物和战斗逻辑。</p>
+<div class="controls"><label>怪物数量 <select id="count"><option>24</option><option>48</option><option selected>96</option></select></label><label>版本 <select id="version"><option value="current">当前版本</option><option value="baseline">优化前快照</option></select></label><button id="run">运行一次对照</button></div>
+<div id="status">每轮先预热 10 帧，再测量 30 帧；优化前的大量怪物场景可能需要约一分钟。</div>
+<table><thead><tr><th>怪物数量</th><th>版本</th><th>画面帧率</th><th>帧间隔中位数</th><th>逻辑与绘制耗时</th></tr></thead><tbody id="results"></tbody></table>
+<div id="stage"><iframe id="game" title="性能压力场景"></iframe></div>
+<p class="note">固定为 1280 × 720。数值仅代表当前浏览器与设备；复测时保持窗口可见，避免同时运行其他性能测试。游戏画面按页面宽度缩放显示。</p>
+</main>
+<script>
+const frame=document.querySelector('#game'),stage=document.querySelector('#stage'),run=document.querySelector('#run'),status=document.querySelector('#status'),results=document.querySelector('#results');
+const resize=()=>{const scale=Math.min(1,stage.clientWidth/1280);stage.style.height=720*scale+'px';frame.style.transform='scale('+scale+')';};new ResizeObserver(resize).observe(stage);resize();
+const row=(count,label,r)=>{const tr=document.createElement('tr');for(const value of [count,label,r.displayFps.toFixed(1)+' FPS',r.frameIntervalMs.median.toFixed(1)+' ms',r.cpuMs.median.toFixed(1)+' ms']){const td=document.createElement('td');td.textContent=value;tr.append(td);}results.append(tr);};
+fetch('/assets/render-qa/performance/comparison.json').then(r=>r.ok?r.json():null).then(data=>{if(data)for(const pair of data.runs){row(pair.count,'已测 · 优化前',pair.baseline);row(pair.count,'已测 · 当前版本',pair.candidate);}}).catch(()=>{});
+run.onclick=async()=>{
+  run.disabled=true;const count=Number(document.querySelector('#count').value),baseline=document.querySelector('#version').value==='baseline';
+  status.textContent='正在载入固定场景…';
+  try{
+    await new Promise((resolve,reject)=>{frame.onload=resolve;frame.onerror=reject;frame.src=baseline?'/assets/render-qa/performance/baseline/block-dungeons.html':'/block-dungeons.html';});
+    const source=await(await fetch('/tests/performance-scenario.js')).text();frame.contentWindow.eval(source);
+    await frame.contentWindow.GamePerformance.prepare(count);status.textContent='正在采样，请保持此窗口可见…';
+    const report=await frame.contentWindow.GamePerformance.sample(30,10);row(count,baseline?'复测 · 优化前':'复测 · 当前版本',report);
+    status.textContent='测量完成 · '+report.alive+' 只怪物 · '+report.displayFps.toFixed(1)+' FPS';
+  }catch(error){status.textContent='测量未完成：'+error.message;}
+  finally{run.disabled=false;}
+};
+</script>
+</html>

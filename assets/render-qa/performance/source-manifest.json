@@ -1,0 +1,140 @@
+{
+  "checkedAt": "2026-10-04T09:31:35.6234241+08:00",
+  "tests": {
+    "total": 203,
+    "pass": 203,
+    "fail": 0,
+    "log": "tests.log"
+  },
+  "source": [
+    {
+      "file": "block-dungeons.html",
+      "sha256": "dd92fbca979cea0b6b84fb5ea23a3382eb87d1acc238f5f2af3efb3b378219d0"
+    },
+    {
+      "file": "voxmobs.js",
+      "sha256": "be84bfc935482d77b28752eade4beb26a45875e80a9e7db25e33101eb886cc38"
+    },
+    {
+      "file": "crowd-grid.js",
+      "sha256": "0e7153c321424d433360b07d429a0dd4aba22279c58f7b2fa191c18a97952101"
+    },
+    {
+      "file": "tests/game-harness.cjs",
+      "sha256": "12c36e1a8714e8d37d333391042dca96de017458b55a784deb9bc49f2f20c2d9"
+    },
+    {
+      "file": "tests/crowd-performance.test.cjs",
+      "sha256": "1ff76e97a31a9356956d3795417e71f2a492fe0a245a91314462a81ee0fdb450"
+    },
+    {
+      "file": "tests/performance-scenario.js",
+      "sha256": "f91e6207cd2d2068802403c1c65dddf012ceac9b954c12cadcbdd50ed9e7e65b"
+    },
+    {
+      "file": "tests/performance-review.html",
+      "sha256": "398bb9f5bad73353de9bafbb91358d816f3bbba70755a2eeb7563f48acb6128e"
+    }
+  ],
+  "baselineSnapshot": [
+    {
+      "file": "block-dungeons.html",
+      "sha256": "f8fa72f2cfe56b057447b75fb6b178f5d4700ea2bbb4eb0b89851608a87bb1c7"
+    },
+    {
+      "file": "combat-motion.js",
+      "sha256": "d3c7b32dcf9b8e2148e68586970cdb35b9afd98f2e096f2d98fdb6eda3bfa3d1"
+    },
+    {
+      "file": "combat-rules.js",
+      "sha256": "e929437bdb1d97c99a8f498c0a45bf1de93dd6726a04f4a20c64f4dc373f9d1c"
+    },
+    {
+      "file": "dungeon-journey-runtime.js",
+      "sha256": "554fefee17c91e35273f5a1f9b407bce44e835df85b00df98cf8cb2d12cdeec2"
+    },
+    {
+      "file": "dungeon-journey.js",
+      "sha256": "5ce57f8a008068f0b22c2d51c32a1e231a7c0fe257e31a8919230bd1736a9c52"
+    },
+    {
+      "file": "dungeon-map.js",
+      "sha256": "40fbb8308c7988bd840436b88037e12dac14b1a015956213e837a86f7528890e"
+    },
+    {
+      "file": "fantasy-hud.js",
+      "sha256": "eb4690f7ec0b890399a6ce96dcfe9b6b17b024aa728ef71d7600e4d869cd15f1"
+    },
+    {
+      "file": "hud-controller.js",
+      "sha256": "60b1f27872954c42dbe78b4383c61d83f6210fab7279fb37f472e04c5617ef95"
+    },
+    {
+      "file": "hud-layout.js",
+      "sha256": "fa6004e996e040b9aff0752a7697cf0acbe24d42ea026eb19719aaac4bdd6db8"
+    },
+    {
+      "file": "inventory-assets.js",
+      "sha256": "a9d1383abc2e65db8ce6c1b598e17bf8aeae116a219cf1b323623ad88116371c"
+    },
+    {
+      "file": "inventory-controller.js",
+      "sha256": "aea890d1dfebe4a869758801f966d5e6bc79bdd0376ddbb847221f77cf55a489"
+    },
+    {
+      "file": "inventory-layout.js",
+      "sha256": "60ab4eb2f175135371af9d321d5bf733ba417b9bf6ba4f182b80817b3b822005"
+    },
+    {
+      "file": "inventory-ui.js",
+      "sha256": "fa5e3d87193f2cf51bada8d2feb6985b8b0b1a0985afaad46ce194f7a3059d55"
+    },
+    {
+      "file": "scene-assets.js",
+      "sha256": "fd9c79081de5cc9caad5972aedffdc2dc27105925d3670f1e158a70a69676815"
+    },
+    {
+      "file": "scene-style.js",
+      "sha256": "4819196f883cd3d25c85e46173cfe77d5fcd8a7de232255e590effeb620e0889"
+    },
+    {
+      "file": "scenefx.js",
+      "sha256": "6797c90fd2ad477744ca505110104846bfc58421e2011596504a401cfa57e213"
+    },
+    {
+      "file": "sfx.js",
+      "sha256": "cf57674ec1ddd262ae77e6a30225e07c6049a81652f2e528d97eeecf71087bb0"
+    },
+    {
+      "file": "stone-material.js",
+      "sha256": "83b604176ae547c9f47cc6274bd3faf5e79089edaf13abfdfd5ce4a8bf162f64"
+    },
+    {
+      "file": "ui-kit.js",
+      "sha256": "7d009d9d7e5dfffbc58c1592b4a1617e2ca04b24a931909cb13a6d81aec67369"
+    },
+    {
+      "file": "ui-motion.js",
+      "sha256": "600a85fff0319a09f11251257ffb2c4c0bf4e45c8a33b420bea0e49c6ad3211e"
+    },
+    {
+      "file": "voxmobs.js",
+      "sha256": "0d6ef919251dfbe1f1486e6481c52c045292d3aa64976b324d23fb1fab1db1ff"
+    },
+    {
+      "file": "weapon-gameplay.js",
+      "sha256": "6522b9b56f62c14c20c908e35bb65fac69ba31d6e52d6287406e57b1af82a8fb"
+    },
+    {
+      "file": "weapon-models.js",
+      "sha256": "1839a33629590c0ed2959403d3dac002313d3585875fc03d808ab04535ab15c5"
+    },
+    {
+      "file": "world3d.js",
+      "sha256": "00e2ae7afb36b88de2655110b04d988b2dd7105894a42a380accebb0cf5b06ac"
+    }
+  ],
+  "comparison": "comparison.json",
+  "review": "review-page-check.json",
+  "cleanup": "Intermediate failed or incomparable optimization trials removed. Fixed-viewport A/B runs retained. Normal game preview reloaded after stress testing."
+}

@@ -1,0 +1,23 @@
+{
+  "project": {
+    "name": "方块地牢 · 苔石建筑 v1 · 导出复核",
+    "uuid": "76acbcb6-e627-5b6d-9941-762810a7ffb9",
+    "save_path": ""
+  },
+  "format": {
+    "id": "free",
+    "name": "通用模型"
+  },
+  "resolution": {
+    "texture_width": 104,
+    "texture_height": 16
+  },
+  "counts": {
+    "cubes": 0,
+    "meshes": 44,
+    "groups": 0,
+    "textures": 1,
+    "outliner_elements": 44
+  },
+  "root_groups": []
+}

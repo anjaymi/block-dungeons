@@ -1,0 +1,186 @@
+{
+  "date": "2026-10-04",
+  "target": "苔石地牢的场景石材与建筑层次",
+  "reference": {
+    "url": "https://www.bilibili.com/video/BV1Z9ar6FEqq/",
+    "observed": "约1:52与2:21的据点石板、路径边缘、石台与局部暖光",
+    "frame": "assets/render-qa/scene-style/reference.jpg",
+    "limit": "主要为户外据点；本轮提取形状和层次用于现有地牢，不声称复制完整地下场景"
+  },
+  "authority": "scene-assets.js",
+  "sourceLayout": "assets/scenes/moss-stone/source-layout.json",
+  "export": {
+    "path": "assets/scenes/moss-stone/moss-stone.bbmodel",
+    "format": "free",
+    "meshes": 44,
+    "textures": 1,
+    "native": "Blockbench 5.2.1 / MCP 1.10.0",
+    "vertexPrecision": 5,
+    "maxVertexError": 0.000004601496542022687,
+    "axis": "[x,y,z] -> [x,z,-y]",
+    "scale": "24 units/tile"
+  },
+  "hypothesis": "大块石材与少量缺角、裂缝可减少地面杂讯；墙脚、压顶与柱台层次承担建筑轮廓。",
+  "changed": [
+    "三种真实倒角与缺角石板",
+    "三层大石块墙体、墙脚、四块压顶石与间隔壁柱",
+    "带分层底座、柱帽与细铜饰带的石柱",
+    "墙边小碎石；装饰避开出口中心"
+  ],
+  "preserved": [
+    "原地图生成与碰撞网格",
+    "石板角色地平面",
+    "墙高与可行走格边界",
+    "其他四主题资源和光照",
+    "现有角色皮肤、模型、动作、判定与 shader",
+    "现有墙根苔藓散布"
+  ],
+  "criticalFeatures": {
+    "visualSelfCheck": {
+      "largeShapes": "passed: 固定房间及PC/手机实际GPU画面",
+      "chippedStone": "passed: 缺角和斜裂缝替代密集细砖",
+      "architecture": "passed: native front/rear, wall foundation/cap and grounded plinth",
+      "coolWarm": "passed: 冷色石材保留火把局部暖光",
+      "userAcceptance": "pending"
+    },
+    "technical": {
+      "closedMeshes": true,
+      "outwardNormals": true,
+      "finiteBounds": true,
+      "walkableTileFootprint": true,
+      "connectedPillarCore": true,
+      "nativeReimportCounts": true,
+      "palettePixelsAndUV": true
+    },
+    "performance": {
+      "fixedRoom": {
+        "beforeTriangles": 248184,
+        "afterTriangles": 81120,
+        "beforeBatches": 10,
+        "afterBatches": 10
+      },
+      "fpsMeasured": false
+    }
+  },
+  "cameras": {
+    "native": {
+      "view": "dungeon_scene_review",
+      "position": [
+        105,
+        125,
+        165
+      ],
+      "target": [
+        0,
+        10,
+        0
+      ],
+      "projection": "orthographic",
+      "zoom": 0.19
+    },
+    "fixedRoom": {
+      "GW": 27,
+      "GH": 21,
+      "cam": [
+        13.5,
+        11
+      ],
+      "projectionCenter": [
+        13.5,
+        10
+      ],
+      "viewport": [
+        1280,
+        800
+      ],
+      "timeMS": 1000,
+      "fixture": "tests/scene-review.html",
+      "kind": "controlled room, not user current map"
+    },
+    "actualGame": {
+      "pcOuter": [
+        1280,
+        720
+      ],
+      "pcInner": [
+        1280,
+        639
+      ],
+      "mobileOuter": [
+        844,
+        470
+      ],
+      "mobileInner": [
+        844,
+        389
+      ]
+    }
+  },
+  "evidence": [
+    "assets/scenes/moss-stone/native-front.png",
+    "assets/scenes/moss-stone/native-rear.png",
+    "assets/scenes/moss-stone/native-reimport.png",
+    "assets/render-qa/scene-style/before.jpg",
+    "assets/render-qa/scene-style/after.jpg",
+    "assets/render-qa/scene-style/comparison.png",
+    "assets/render-qa/scene-style/game-pc.jpg",
+    "assets/render-qa/scene-style/game-mobile.jpg"
+  ],
+  "limits": [
+    "未经真实手机帧率与触屏手感验收",
+    "其他四主题保留原样",
+    "原生工具清理离屏视图时报onContextMenu未定义；后续list_views确认离屏注册已移除，导出与复核图已保存",
+    "浏览器包含先前同样的无来源MutationObserver错误，未记为零错误"
+  ],
+  "sync": {
+    "gameRuntime": "shared procedural geometry -> existing batch renderer",
+    "editableNativeFile": "exported and reimported",
+    "userOriginalUnsavedTreePreserved": true
+  },
+  "tests": {
+    "passed": 161,
+    "failed": 0
+  },
+  "hashes": [
+    {
+      "path": "scene-assets.js",
+      "sha256": "564759f1d0b2898b2921e85dbbe13204aac9f32db6dabaf99981604e6b498cc1"
+    },
+    {
+      "path": "world3d.js",
+      "sha256": "2b64d7ea72ded54b5bf2b23c204a882b88d46800656ccc8dbb485d8b7d766879"
+    },
+    {
+      "path": "block-dungeons.html",
+      "sha256": "739c4738c2b91e56b29dcd074c35e12cfe6ddae1fb694b7b69f537e2dcd15631"
+    },
+    {
+      "path": "combat-motion.js",
+      "sha256": "d3c7b32dcf9b8e2148e68586970cdb35b9afd98f2e096f2d98fdb6eda3bfa3d1"
+    },
+    {
+      "path": "weapon-models.js",
+      "sha256": "1839a33629590c0ed2959403d3dac002313d3585875fc03d808ab04535ab15c5"
+    },
+    {
+      "path": "weapon-gameplay.js",
+      "sha256": "6522b9b56f62c14c20c908e35bb65fac69ba31d6e52d6287406e57b1af82a8fb"
+    },
+    {
+      "path": "scene-style.js",
+      "sha256": "4819196f883cd3d25c85e46173cfe77d5fcd8a7de232255e590effeb620e0889"
+    },
+    {
+      "path": "scenefx.js",
+      "sha256": "6797c90fd2ad477744ca505110104846bfc58421e2011596504a401cfa57e213"
+    },
+    {
+      "path": "assets/scenes/moss-stone/moss-stone.bbmodel",
+      "sha256": "9cb22962cee0c0bc6e77a4443791019bc39fa4f59103524243c62a81d416c859"
+    },
+    {
+      "path": "assets/scenes/moss-stone/palette.png",
+      "sha256": "4aba6fecf9f2bdda8d4d491cd9815f4260e8e86885cfe2e232ebc8db23e8a260"
+    }
+  ]
+}

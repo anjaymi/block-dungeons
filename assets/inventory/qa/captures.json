@@ -1,0 +1,65 @@
+{
+  "renderer": "Production game Canvas functions, native Skia Canvas, real PNGs, controlled game fixture. World uses its existing 2D fallback. Browser/GPU/touch verification is separate.",
+  "captures": [
+    {
+      "name": "pc-1317x1194",
+      "path": "E:\\暗黑肉鸽\\assets\\inventory\\qa\\pc-1317x1194.png",
+      "width": 1317,
+      "height": 1194
+    },
+    {
+      "name": "pc-1280x760",
+      "path": "E:\\暗黑肉鸽\\assets\\inventory\\qa\\pc-1280x760.png",
+      "width": 1280,
+      "height": 760
+    },
+    {
+      "name": "mobile-844x390",
+      "path": "E:\\暗黑肉鸽\\assets\\inventory\\qa\\mobile-844x390.png",
+      "width": 844,
+      "height": 390
+    },
+    {
+      "name": "mobile-667x375-bag",
+      "path": "E:\\暗黑肉鸽\\assets\\inventory\\qa\\mobile-667x375-bag.png",
+      "width": 667,
+      "height": 375
+    },
+    {
+      "name": "mobile-667x375-gear",
+      "path": "E:\\暗黑肉鸽\\assets\\inventory\\qa\\mobile-667x375-gear.png",
+      "width": 667,
+      "height": 375
+    },
+    {
+      "name": "portrait-390x844",
+      "path": "E:\\暗黑肉鸽\\assets\\inventory\\qa\\portrait-390x844.png",
+      "width": 390,
+      "height": 844
+    },
+    {
+      "name": "mobile-item",
+      "path": "E:\\暗黑肉鸽\\assets\\inventory\\qa\\mobile-item.png",
+      "width": 844,
+      "height": 390
+    },
+    {
+      "name": "mobile-stats",
+      "path": "E:\\暗黑肉鸽\\assets\\inventory\\qa\\mobile-stats.png",
+      "width": 844,
+      "height": 390
+    },
+    {
+      "name": "mobile-cube",
+      "path": "E:\\暗黑肉鸽\\assets\\inventory\\qa\\mobile-cube.png",
+      "width": 844,
+      "height": 390
+    },
+    {
+      "name": "mobile-appearance",
+      "path": "E:\\暗黑肉鸽\\assets\\inventory\\qa\\mobile-appearance.png",
+      "width": 844,
+      "height": 390
+    }
+  ]
+}

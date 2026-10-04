@@ -1,0 +1,32 @@
+[
+  {
+    "level": "log",
+    "message": "[World3D] ready · three r186",
+    "timestamp": "2026-10-03T14:47:26.979Z",
+    "url": "http://127.0.0.1:8000/world3d.js?v=18"
+  },
+  {
+    "level": "log",
+    "message": "[World3D] 构建完成 苔石地牢 · 1074 实例 / 25 批次 · 335ms",
+    "timestamp": "2026-10-03T14:47:27.322Z",
+    "url": "http://127.0.0.1:8000/world3d.js?v=18"
+  },
+  {
+    "level": "log",
+    "message": "[World3D] ready · three r186",
+    "timestamp": "2026-10-03T14:54:33.718Z",
+    "url": "http://127.0.0.1:8000/world3d.js?v=18"
+  },
+  {
+    "level": "log",
+    "message": "[World3D] 构建完成 苔石地牢 · 1046 实例 / 31 批次 · 479ms",
+    "timestamp": "2026-10-03T14:54:34.207Z",
+    "url": "http://127.0.0.1:8000/world3d.js?v=18"
+  },
+  {
+    "level": "log",
+    "message": "[World3D] diag {\"wlAlphaOK\":true,\"lost\":false,\"failed\":false,\"ok\":true,\"vis\":\"visible\",\"gl\":\"ANGLE (NVIDIA, NVIDIA GeForce RTX 3070 Ti (0x00002482) Direct3D11 vs_5_0 ps_5_0, D3D11)\",\"size\":\"1457x1163\",\"PR\":1,\"zoom\":1.5935937499999997,\"actorRenderer\":\"canvas\",\"ctxLost\":false,\"meshes\":31,\"verts\":2035434,\"floorNear\":\"1/1\",\"calls\":31,\"tris\":678478}",
+    "timestamp": "2026-10-03T14:54:34.467Z",
+    "url": "http://127.0.0.1:8000/block-dungeons.html?weaponLab=1&weapon=greatsword&session=1"
+  }
+]

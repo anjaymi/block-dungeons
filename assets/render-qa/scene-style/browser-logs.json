@@ -1,0 +1,54 @@
+[
+  {
+    "level": "error",
+    "message": "Uncaught TypeError: Failed to execute 'observe' on 'MutationObserver': parameter 1 is not of type 'Node'.",
+    "timestamp": "2026-10-03T17:10:26.087Z"
+  },
+  {
+    "level": "log",
+    "message": "[World3D] ready · three r186",
+    "timestamp": "2026-10-03T17:11:13.548Z",
+    "url": "http://127.0.0.1:8000/world3d.js?v=20"
+  },
+  {
+    "level": "log",
+    "message": "[World3D] 构建完成 苔石地牢 · 1348 实例 / 29 批次 · 187ms",
+    "timestamp": "2026-10-03T17:11:13.747Z",
+    "url": "http://127.0.0.1:8000/world3d.js?v=20"
+  },
+  {
+    "level": "log",
+    "message": "[World3D] diag {\"wlAlphaOK\":true,\"lost\":false,\"failed\":false,\"ok\":true,\"vis\":\"visible\",\"gl\":\"ANGLE (NVIDIA, NVIDIA GeForce RTX 3070 Ti (0x00002482) Direct3D11 vs_5_0 ps_5_0, D3D11)\",\"size\":\"1280x639\",\"PR\":1,\"zoom\":1.8497368421052633,\"actorRenderer\":\"canvas\",\"ctxLost\":false,\"meshes\":29,\"verts\":937332,\"floorNear\":\"1/1\",\"calls\":29,\"tris\":312444}",
+    "timestamp": "2026-10-03T17:11:30.015Z",
+    "url": "http://127.0.0.1:8000/block-dungeons.html?weaponLab=1&weapon=greatsword&session=1"
+  },
+  {
+    "level": "error",
+    "message": "Uncaught TypeError: Failed to execute 'observe' on 'MutationObserver': parameter 1 is not of type 'Node'.",
+    "timestamp": "2026-10-03T17:19:53.196Z"
+  },
+  {
+    "level": "log",
+    "message": "[World3D] ready · three r186",
+    "timestamp": "2026-10-03T17:20:37.955Z",
+    "url": "http://127.0.0.1:8000/world3d.js?v=20"
+  },
+  {
+    "level": "log",
+    "message": "[World3D] diag {\"wlAlphaOK\":null,\"lost\":false,\"failed\":false,\"ok\":true,\"vis\":\"\",\"gl\":\"ANGLE (NVIDIA, NVIDIA GeForce RTX 3070 Ti (0x00002482) Direct3D11 vs_5_0 ps_5_0, D3D11)\",\"size\":\"1280x639\",\"PR\":1,\"zoom\":1,\"actorRenderer\":\"canvas\",\"ctxLost\":false,\"meshes\":0,\"verts\":0,\"floorNear\":\"0/0\",\"calls\":0,\"tris\":0}",
+    "timestamp": "2026-10-03T17:20:37.978Z",
+    "url": "http://127.0.0.1:8000/block-dungeons.html?weaponLab=1&weapon=greatsword&session=1"
+  },
+  {
+    "level": "log",
+    "message": "[World3D] 构建完成 苔石地牢 · 1336 实例 / 31 批次 · 191ms",
+    "timestamp": "2026-10-03T17:20:38.201Z",
+    "url": "http://127.0.0.1:8000/world3d.js?v=20"
+  },
+  {
+    "level": "log",
+    "message": "[World3D] diag {\"wlAlphaOK\":true,\"lost\":false,\"failed\":false,\"ok\":true,\"vis\":\"visible\",\"gl\":\"ANGLE (NVIDIA, NVIDIA GeForce RTX 3070 Ti (0x00002482) Direct3D11 vs_5_0 ps_5_0, D3D11)\",\"size\":\"844x389\",\"PR\":1,\"zoom\":1.6500000000000001,\"actorRenderer\":\"canvas\",\"ctxLost\":false,\"meshes\":31,\"verts\":965988,\"floorNear\":\"1/1\",\"calls\":31,\"tris\":321996}",
+    "timestamp": "2026-10-03T17:23:13.769Z",
+    "url": "http://127.0.0.1:8000/block-dungeons.html?weaponLab=1&weapon=greatsword&session=1"
+  }
+]

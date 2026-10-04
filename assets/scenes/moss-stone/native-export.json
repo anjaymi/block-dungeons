@@ -1,0 +1,14 @@
+{
+  "codec": {
+    "id": "project",
+    "name": "Blockbench Project",
+    "extension": "bbmodel"
+  },
+  "file_name": "方块地牢 · 苔石建筑 v1 · 场景候选",
+  "byte_length": 99935,
+  "encoding": "utf-8",
+  "wrote_to_path": null,
+  "truncated": false,
+  "content": null,
+  "resource_uri": "blockbench://export/f0626e97-20b5-45a4-ce31-d88ea26ae0f6/7427ceeb-aadb-4f98-8aac-1d97f0c5a7a1/%E6%96%B9%E5%9D%97%E5%9C%B0%E7%89%A2%20%C2%B7%20%E8%8B%94%E7%9F%B3%E5%BB%BA%E7%AD%91%20v1%20%C2%B7%20%E5%9C%BA%E6%99%AF%E5%80%99%E9%80%89.bbmodel"
+}

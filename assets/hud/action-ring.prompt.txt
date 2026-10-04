@@ -1,0 +1,7 @@
+Use case: ui-mockup
+Asset type: game HUD action button frame, one standalone square raster asset.
+Input image 1 is a STYLE REFERENCE only: match the large round gold-rimmed normal attack button at the lower right of the supplied mobile game screenshot, with its icon and label removed.
+Primary request: Produce a single blank round fantasy dungeon action button background. Intended 512 x 512 square, centered, frontal orthographic HUD presentation. Circle outermost ornaments extend 94 percent of the square, surrounded by a small genuinely transparent perimeter.
+Subject: an opaque charcoal black, slightly purple circular metal face, thick faceted dark gunmetal bevel ring, rich warm gold trim along the bevel, and exactly four small polished gold diamond ornaments at the top, right, bottom, and left cardinal directions. All ornaments fit within the square. A subtle dark stone-metal material within the center.
+Style/medium: polished rendered game interface asset, sculpted bevels and dimensional highlights, faithful to the ornate purple-black and gold frame material in reference. Legible at small button size. Neutral frontal lighting, restrained warm gold edge highlights.
+Constraints: genuine transparent background outside the circle. Nothing inside the circle except subtle dark material. Absolutely no sword, other icon, glyph, text, label plaque, number, character, scenery, external shadow, aura, halo, or other button. Do not render a whole interface. No vector-flat style. Single asset only.

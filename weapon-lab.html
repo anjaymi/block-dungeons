@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>武器实验室 · 方块地牢</title>
+<style>
+  *{box-sizing:border-box}html,body{margin:0;height:100%;background:#11121b;color:#e9e5df;font:14px/1.5 "Microsoft YaHei",sans-serif}
+  body{display:flex;flex-direction:column}header{padding:12px 20px 10px;border-bottom:1px solid #3a3443;background:#1a1923;flex:none}
+  .top{display:flex;gap:18px;align-items:center;flex-wrap:wrap}h1{margin:0;font-size:17px;letter-spacing:.05em}h1 span{font-size:11px;color:#9b929f;font-weight:400;margin-left:10px}
+  nav{display:flex;gap:7px}button,a{font:inherit}button{padding:5px 15px;color:#d7d1dc;background:#25212e;border:1px solid #4b4051;border-radius:5px;cursor:pointer}button:hover{border-color:#d8b67b}button[aria-pressed=true]{background:#4b3825;border-color:#c8a16a;color:#ffe3b6}button:focus-visible,a:focus-visible{outline:2px solid #ffd19a;outline-offset:3px}
+  a{color:#b6abbc;margin-left:auto;text-decoration:none;font-size:12px}a:hover{text-decoration:underline}.hint{margin:7px 0 0;color:#b7aebd;font-size:12px}.hint strong{color:#edc797;font-weight:500}#feedback{color:#a5c7c9;margin-left:10px}
+  .layout-choice{display:flex;gap:4px;margin-left:6px}.layout-choice button{font-size:11px;padding:4px 9px}
+  iframe{display:block;border:0;width:100%;flex:1;min-height:0;background:#000}dialog{background:#24212d;border:1px solid #665468;border-radius:10px;color:#eee2d5;max-width:360px;padding:24px}dialog::backdrop{background:#0009}dialog h2{font-size:18px;margin:0 0 8px}dialog p{color:#bdb3c3}dialog div{display:flex;gap:12px;justify-content:flex-end}
+  @media(max-width:700px){header{padding:8px 10px}.top{gap:8px}h1{font-size:14px}h1 span{display:none}nav{gap:5px}button{padding:4px 10px;font-size:12px}a{font-size:11px}.hint{font-size:11px;margin-top:5px}#feedback{display:block;margin:2px 0 0}}
+</style>
+</head>
+<body>
+<header>
+  <div class="top"><h1>武器实验室<span>方块地牢 · 玩法原型</span></h1><nav aria-label="选择实验武器"><button data-weapon="greatsword" aria-pressed="true">巨剑</button><button data-weapon="sickles" aria-pressed="false">双镰</button><button data-weapon="hammer" aria-pressed="false">战锤</button></nav><nav class="layout-choice" aria-label="界面布局"><button data-hud="auto" aria-pressed="true">自动</button><button data-hud="pc" aria-pressed="false">PC</button><button data-hud="mobile" aria-pressed="false">手机</button></nav><a href="block-dungeons.html">返回默认游戏 ↗</a></div>
+  <p class="hint"><strong id="description">破阵重劈：放弃旋风，集中重劈前方。</strong> 第二击后松手约 0.14 秒，看到“变招就绪”再按攻击。<span id="feedback" aria-live="polite">按住攻击：基础连段 · 手机沿用攻击按钮</span></p>
+</header>
+<iframe id="game" title="方块地牢武器实验室" src="block-dungeons.html?weaponLab=1&amp;weapon=greatsword&amp;session=1" allow="autoplay"></iframe>
+<dialog id="restart"><h2>重新选择实验武器？</h2><p>当前冒险会结束，并回到新武器的准备界面。</p><div><button id="cancel">继续当前冒险</button><button id="confirm">重新选择</button></div></dialog>
+<script>
+  const game=document.getElementById('game'), dialog=document.getElementById('restart');
+  const descriptions={greatsword:'破阵重劈：放弃旋风，集中重劈前方。',sickles:'勾回剪击：勾近轻型敌人，再贴身剪击；墙和重敌可阻挡。',hammer:'撞阵横砸：打飞轻敌，撞墙或撞敌追加一次伤害。'};
+  let current='greatsword', gameState='title', next=null, session=1, hudMode='auto';
+  for(const b of document.querySelectorAll('[data-hud]'))b.addEventListener('click',()=>{
+    hudMode=b.dataset.hud;
+    for(const option of document.querySelectorAll('[data-hud]'))option.setAttribute('aria-pressed',String(option.dataset.hud===hudMode));
+    game.contentWindow.postMessage({type:'block-dungeons-hud',mode:hudMode},location.origin);
+  });
+  function selectWeapon(kind){
+    current=kind;gameState='title';
+    for(const b of document.querySelectorAll('[data-weapon]')) b.setAttribute('aria-pressed',String(b.dataset.weapon===kind));
+    document.getElementById('description').textContent=descriptions[kind];
+    document.getElementById('feedback').textContent='按住攻击：基础连段 · 手机沿用攻击按钮';
+    game.src='block-dungeons.html?weaponLab=1&weapon='+kind+'&session='+(++session)+'&hud='+hudMode;
+  }
+  for(const b of document.querySelectorAll('[data-weapon]')) b.addEventListener('click',()=>{
+    if(b.dataset.weapon===current) return;
+    if(!['title','dead'].includes(gameState)){next=b.dataset.weapon;dialog.showModal();}else selectWeapon(b.dataset.weapon);
+  });
+  document.getElementById('cancel').addEventListener('click',()=>dialog.close());
+  document.getElementById('confirm').addEventListener('click',()=>{dialog.close();selectWeapon(next);});
+  addEventListener('message',e=>{
+    if(e.source!==game.contentWindow || e.origin!==location.origin || e.data?.type!=='block-dungeons-lab' || e.data.session!==String(session)) return;
+    gameState=e.data.state;
+    current=e.data.weapon;
+    if(e.data.hud){hudMode=e.data.hud;for(const option of document.querySelectorAll('[data-hud]'))option.setAttribute('aria-pressed',String(option.dataset.hud===hudMode));}
+    for(const b of document.querySelectorAll('[data-weapon]')) b.setAttribute('aria-pressed',String(b.dataset.weapon===current));
+    document.getElementById('description').textContent=descriptions[current] || (e.data.weaponName+' · 基础连段；选择巨剑、双镰或战锤体验变招。');
+    document.getElementById('feedback').textContent=e.data.ready?'变招就绪 · 再按攻击':e.data.waiting?'第二击完成 · 松手收势':gameState==='title'?'按 Enter 开始 · 按住攻击继续原连段':'WASD 移动 · Shift 翻滚 · X 换组';
+  });
+</script>
+</body>
+</html>

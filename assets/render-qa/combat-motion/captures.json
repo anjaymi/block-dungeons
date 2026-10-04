@@ -1,0 +1,10 @@
+{
+  "renderer": "Production character rigs, skins, weapons and CombatMotion. Native Skia Canvas, controlled stationary actors, fixed 120 Hz animation sampling. This is not browser/GPU footage or a frame-rate measurement.",
+  "frameRate": 30,
+  "frames": 100,
+  "duration": 3330,
+  "files": [
+    "three-weapons.gif",
+    "pose-sheet.png"
+  ]
+}

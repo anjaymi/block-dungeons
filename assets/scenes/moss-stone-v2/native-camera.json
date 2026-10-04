@@ -1,0 +1,15 @@
+{
+  "view": "floor_damage_v2",
+  "position": [
+    105,
+    125,
+    165
+  ],
+  "target": [
+    0,
+    9,
+    10
+  ],
+  "projection": "orthographic",
+  "zoom": 0.125
+}

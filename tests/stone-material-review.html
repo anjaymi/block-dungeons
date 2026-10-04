@@ -1,0 +1,29 @@
+<!doctype html><html lang="zh"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>苔石地牢 · 石材 shader 对照</title>
+<style>html,body{margin:0;height:100%;background:#05050a;font-family:Microsoft YaHei,sans-serif;color:#e7e6e4;overflow:hidden}canvas{position:fixed;inset:0;width:100%;height:100%;pointer-events:none}header{position:fixed;z-index:3;top:20px;left:24px;background:#111827dc;border:1px solid #495361;padding:14px 18px;border-radius:6px}h1{font-size:19px;margin:0 0 7px}p{font-size:12px;color:#a4afbe;margin:0 0 12px}a{display:inline-block;padding:7px 14px;margin-right:8px;border:1px solid #69778c;color:#e5cf9b;text-decoration:none}output{position:fixed;z-index:3;bottom:18px;left:24px;font-size:12px;color:#aab8c9}</style>
+<canvas id="c"></canvas><header><h1 id="title"></h1><p>固定房间 · 相同地图、镜头、灯位与时间 · 游戏实际地形渲染</p><a href="?version=before">着色前</a><a href="?version=after">石材 shader</a><a href="/assets/scenes/moss-stone-v2/floor-concept.png">概念图</a><a href="/weapon-lab.html">进入游戏</a></header><output id="status">正在绘制场景</output>
+<script src="/vendor/voxel-world.js"></script><script src="/scene-style.js"></script>
+<script>
+(async()=>{
+  Object.defineProperty(performance,'now',{value:()=>1000});
+  const before=new URLSearchParams(location.search).get('version')==='before';
+  document.getElementById('title').textContent=before?'着色前 · 平整灰色表面':'石材 shader · 哑光、斑驳与微表面';
+  const load=src=>new Promise((resolve,reject)=>{const s=document.createElement('script');s.src=src;s.onload=resolve;s.onerror=reject;document.head.appendChild(s);});
+  await load(before?'/assets/render-qa/stone-shader/scene-assets-before.js':'/scene-assets.js?v=3');
+  if(!before)await load('/stone-material.js?v=1');
+  await load(before?'/assets/render-qa/stone-shader/world3d-before.js':'/world3d.js?v=22');
+  const GW=27,GH=21,G=new Uint8Array(GW*GH),roomId=new Int16Array(G.length).fill(-1);
+  for(let j=5;j<17;j++)for(let i=4;i<23;i++){G[j*GW+i]=1;roomId[j*GW+i]=0;}
+  for(let j=8;j<12;j++)for(let i=1;i<4;i++)G[j*GW+i]=1;
+  for(let j=10;j<14;j++)for(let i=23;i<26;i++)G[j*GW+i]=1;
+  const hash=(a,b,c)=>{let h=Math.imul(a,374761393)^Math.imul(b,668265263)^Math.imul(c,1274126177);h=Math.imul(h^(h>>>13),1274126177);return ((h^(h>>>16))>>>0)/4294967296;};
+  const pillars=[];for(let j=8;j<14;j++)for(let i=8;i<20;i++)if(hash(i,j,31)<.2&&pillars.length<2&&(!pillars.length||i>pillars[0][0]+5)){G[j*GW+i]=0;pillars.push([i,j]);}
+  const torches=[6,12,20].map((i,n)=>({i,j:4,x:i+.5,y:5.25,ph:n*.6}));
+  const o={G,GW,GH,roomId,theme:{name:'苔石地牢'},torches,player:{x:13.5,y:11,G:{}},cam:{x:13.5,y:11},exitOpen:false};
+  const draw=()=>{o.zoom=Math.min(innerWidth/1040,innerHeight/680)*1.22;o.ox=innerWidth/(2*o.zoom)-13.5*44;o.oy=innerHeight/(2*o.zoom)-10*32;
+    const ok=World3D.frame(o),d=World3D.diag(o.player.x,o.player.y);let intact=0,damaged=0;
+    if(SceneAssets.floorTreatment)for(let j=0;j<GH;j++)for(let i=0;i<GW;i++)if(G[j*GW+i]===1){if(SceneAssets.floorTreatment(o,i,j).damaged)damaged++;else intact++;}
+    document.getElementById('status').textContent=(ok?'GPU 地形已绘制':'绘制失败')+' · '+d.meshes+' 批次 · '+d.tris+' 三角形'+(damaged?' · '+intact+' 块完整 / '+damaged+' 块局部破损':'');};
+  draw();addEventListener('resize',draw);
+})();
+</script></html>

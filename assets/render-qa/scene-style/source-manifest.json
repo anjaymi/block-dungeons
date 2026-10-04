@@ -1,0 +1,107 @@
+{
+  "date": "2026-10-04",
+  "files": [
+    {
+      "path": "scene-assets.js",
+      "sha256": "564759f1d0b2898b2921e85dbbe13204aac9f32db6dabaf99981604e6b498cc1"
+    },
+    {
+      "path": "world3d.js",
+      "sha256": "2b64d7ea72ded54b5bf2b23c204a882b88d46800656ccc8dbb485d8b7d766879"
+    },
+    {
+      "path": "block-dungeons.html",
+      "sha256": "739c4738c2b91e56b29dcd074c35e12cfe6ddae1fb694b7b69f537e2dcd15631"
+    },
+    {
+      "path": "combat-motion.js",
+      "sha256": "d3c7b32dcf9b8e2148e68586970cdb35b9afd98f2e096f2d98fdb6eda3bfa3d1"
+    },
+    {
+      "path": "weapon-models.js",
+      "sha256": "1839a33629590c0ed2959403d3dac002313d3585875fc03d808ab04535ab15c5"
+    },
+    {
+      "path": "weapon-gameplay.js",
+      "sha256": "6522b9b56f62c14c20c908e35bb65fac69ba31d6e52d6287406e57b1af82a8fb"
+    },
+    {
+      "path": "scene-style.js",
+      "sha256": "4819196f883cd3d25c85e46173cfe77d5fcd8a7de232255e590effeb620e0889"
+    },
+    {
+      "path": "scenefx.js",
+      "sha256": "6797c90fd2ad477744ca505110104846bfc58421e2011596504a401cfa57e213"
+    },
+    {
+      "path": "assets/scenes/moss-stone/moss-stone.bbmodel",
+      "sha256": "9cb22962cee0c0bc6e77a4443791019bc39fa4f59103524243c62a81d416c859"
+    },
+    {
+      "path": "assets/scenes/moss-stone/palette.png",
+      "sha256": "4aba6fecf9f2bdda8d4d491cd9815f4260e8e86885cfe2e232ebc8db23e8a260"
+    }
+  ],
+  "protected": {
+    "htmlBodyUnchanged": true,
+    "files": [
+      {
+        "path": "combat-motion.js",
+        "unchanged": true
+      },
+      {
+        "path": "weapon-models.js",
+        "unchanged": true
+      },
+      {
+        "path": "weapon-gameplay.js",
+        "unchanged": true
+      },
+      {
+        "path": "scene-style.js",
+        "unchanged": true
+      },
+      {
+        "path": "scenefx.js",
+        "unchanged": true
+      }
+    ]
+  },
+  "regression": {
+    "passed": 161,
+    "failed": 0
+  },
+  "diagnostics": [
+    {
+      "wlAlphaOK": true,
+      "lost": false,
+      "failed": false,
+      "ok": true,
+      "vis": "visible",
+      "gl": "ANGLE (NVIDIA, NVIDIA GeForce RTX 3070 Ti (0x00002482) Direct3D11 vs_5_0 ps_5_0, D3D11)",
+      "size": "844x389",
+      "PR": 1,
+      "zoom": 1.6500000000000001,
+      "actorRenderer": "canvas",
+      "ctxLost": false,
+      "meshes": 31,
+      "verts": 965988,
+      "floorNear": "1/1",
+      "calls": 31,
+      "tris": 321996
+    }
+  ],
+  "fixedRoom": {
+    "beforeTriangles": 248184,
+    "afterTriangles": 81120,
+    "beforeBatches": 10,
+    "afterBatches": 10
+  },
+  "actualGameMapNote": "The PC/mobile game frames are the same new run; fixed-room before/after is a separate deterministic fixture.",
+  "reference": {
+    "url": "https://www.bilibili.com/video/BV1Z9ar6FEqq/",
+    "observed": "约1:52与2:21的据点石板、路径边缘、石台与局部暖光",
+    "frame": "assets/render-qa/scene-style/reference.jpg",
+    "limit": "主要为户外据点；本轮提取形状和层次用于现有地牢，不声称复制完整地下场景"
+  }
+}

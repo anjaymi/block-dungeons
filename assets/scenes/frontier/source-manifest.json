@@ -1,0 +1,107 @@
+{
+  "revision": "frontier-1",
+  "origin": "User-supplied local voxel-basebody project; not an official Minecraft asset pack",
+  "license": "No separate license found; provenance retained for this local project",
+  "models": {
+    "tree": {
+      "source": "G:\\ces\\voxel-basebody\\public\\trees\\seasonal-r001\\summer\\young.glb",
+      "sha256": "3df596920568e901d2ae48d475994a9269e7ac7e74fdeacc1f590efe42a4b221",
+      "bytes": 332752,
+      "sourceTriangles": 53352,
+      "triangles": 5160,
+      "removedDisplayBlocks": 64,
+      "lod": "Block bounds and node transforms retained; subpixel rounded bevels omitted",
+      "bounds": {
+        "min": [
+          -0.7612540002595783,
+          -0.8779680002595784,
+          0
+        ],
+        "max": [
+          0.7612540002595783,
+          0.8779680002595784,
+          2.30741770150286
+        ]
+      },
+      "scale": 2.6,
+      "sourceGround": 0.040891653367968905,
+      "axis": "source Y up -> runtime Z up; [X,-Z,Y]",
+      "textures": 0
+    },
+    "stump": {
+      "source": "G:\\ces\\voxel-basebody\\public\\nature\\r001\\stump.glb",
+      "sha256": "914bc0b7dffe8d1aaef0c150a13bfa8b122806f14093b18981cdd3c5f30d9094",
+      "bytes": 98028,
+      "sourceTriangles": 11232,
+      "triangles": 1248,
+      "removedDisplayBlocks": 0,
+      "lod": "Block bounds and node transforms retained; subpixel rounded bevels omitted",
+      "bounds": {
+        "min": [
+          -0.4830592983766906,
+          -0.5156999971568584,
+          0
+        ],
+        "max": [
+          0.4830592983766906,
+          0.5156999971568584,
+          0.612000011895597
+        ]
+      },
+      "scale": 1.8,
+      "sourceGround": -6.55651092060536e-9,
+      "axis": "source Y up -> runtime Z up; [X,-Z,Y]",
+      "textures": 0
+    },
+    "log": {
+      "source": "G:\\ces\\voxel-basebody\\public\\nature\\r001\\log.glb",
+      "sha256": "0bb35da4d698b76aa20dc8b2a27eb356ea359ac6af614a292a8d0236932e21f0",
+      "bytes": 107968,
+      "sourceTriangles": 20520,
+      "triangles": 2280,
+      "removedDisplayBlocks": 0,
+      "lod": "Block bounds and node transforms retained; subpixel rounded bevels omitted",
+      "bounds": {
+        "min": [
+          -0.29012158619271367,
+          -0.4500000000938773,
+          0
+        ],
+        "max": [
+          0.2816999997317791,
+          0.4500000000938773,
+          0.6648363485730886
+        ]
+      },
+      "scale": 1.8,
+      "sourceGround": -0.0004999998509883896,
+      "axis": "source Y up -> runtime Z up; [X,-Z,Y]",
+      "textures": 0
+    },
+    "daisy": {
+      "source": "G:\\ces\\voxel-basebody\\public\\flowers\\r001\\daisy-growing.glb",
+      "sha256": "5bba596051bbe75c3d082bc11211f331f59f72ddd1483ae9c9cc677606a8b171",
+      "bytes": 220508,
+      "sourceTriangles": 13500,
+      "triangles": 1200,
+      "removedDisplayBlocks": 25,
+      "lod": "Block bounds and node transforms retained; subpixel rounded bevels omitted",
+      "bounds": {
+        "min": [
+          -0.1551924087860813,
+          -0.09549910329315822,
+          0
+        ],
+        "max": [
+          0.16549413197190216,
+          0.060303554739567646,
+          0.36744561656495756
+        ]
+      },
+      "scale": 0.75,
+      "sourceGround": 0.029200000323355197,
+      "axis": "source Y up -> runtime Z up; [X,-Z,Y]",
+      "textures": 0
+    }
+  }
+}

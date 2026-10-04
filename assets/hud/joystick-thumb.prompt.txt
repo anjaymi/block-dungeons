@@ -1,0 +1,9 @@
+Use case: stylized-concept
+Asset type: one movable analog joystick thumb cap for a mobile fantasy dungeon game, transparent raster UI asset.
+Input image: the supplied mobile gameplay screenshot is a STYLE REFERENCE ONLY. Match the circular central thumb at approximately x149..270 y598..720, within the lower-left joystick.
+Primary request: Generate ONLY one perfectly circular thumb cap, front-facing with no perspective. Intended design coordinates 256 x 256, square. The centered disc is 90% of the image width with equal transparent padding on every side.
+Materials: muted dark mauve-grey embossed stone-metal disc, broad soft bevel, bright silver-lavender upper-left rim highlight, shadowed lower-right bevel, slightly mottled understated dark purple-grey face.
+Decoration: a single subtle engraved four-point compass diamond at the center, like four narrow curved points meeting at the center. Desaturated grey-lavender engraving, low contrast. No cardinal arrows or labels.
+Lighting: softly painted 2D game metal, top-left diffuse light, tactile physical thumb cap matching the screenshot, restrained contrast.
+Background: genuine alpha transparency outside the circular disc. The disc itself is opaque.
+Avoid: no text, letters, numbers, gold, orange, bright magic glow, arrows at the edge, outer joystick ring, game scene, other buttons, multiple assets, collage, screenshot, checkerboard, or wide cast shadow. One production thumb cap only.

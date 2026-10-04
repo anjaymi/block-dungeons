@@ -1,0 +1,51 @@
+{
+  "alive": 192,
+  "cpuMs": {
+    "mean": 38.78083333149552,
+    "median": 38.69999998807907,
+    "p95": 45.30000001192093
+  },
+  "displayFps": 29.94011976045817,
+  "drawingMs": {
+    "mean": 32.52583333353201,
+    "median": 32.599999994039536,
+    "p95": 37.80000001192093
+  },
+  "frameIntervalMs": {
+    "mean": 39.44499999999971,
+    "median": 33.40000000002328,
+    "p95": 50.09999999997672
+  },
+  "frames": 120,
+  "hp": 100000,
+  "renderer": {
+    "PR": 1,
+    "actorAtlas": "2048x1408",
+    "actorBoxes": 22740,
+    "actorCalls": 1,
+    "actorRenderer": "gpu-instanced-atlas",
+    "actors": 192,
+    "calls": 52,
+    "ctxLost": false,
+    "failed": false,
+    "floorNear": "0/0",
+    "gl": "ANGLE (NVIDIA, NVIDIA GeForce RTX 3070 Ti (0x00002482) Direct3D11 vs_5_0 ps_5_0, D3D11)",
+    "lost": false,
+    "meshes": 52,
+    "ok": true,
+    "size": "1280x720",
+    "tris": 402070,
+    "verts": 1206210,
+    "vis": "visible",
+    "wlAlphaOK": true,
+    "zoom": 2.0842105263157897
+  },
+  "simulationMs": {
+    "mean": 6.254999997963508,
+    "median": 6.0999999940395355,
+    "p95": 8.199999988079071
+  },
+  "viewports": [
+    "1280x720"
+  ]
+}

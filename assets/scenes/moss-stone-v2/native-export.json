@@ -1,0 +1,14 @@
+{
+  "codec": {
+    "id": "project",
+    "name": "Blockbench Project",
+    "extension": "bbmodel"
+  },
+  "file_name": "方块地牢 · 苔石地面 v2 · 概念落地",
+  "byte_length": 181256,
+  "encoding": "utf-8",
+  "wrote_to_path": null,
+  "truncated": false,
+  "content": null,
+  "resource_uri": "blockbench://export/9c72ecd5-2838-15d1-6994-dce78120792c/6aeb28b6-b4bc-4413-b994-34d5efdcadda/%E6%96%B9%E5%9D%97%E5%9C%B0%E7%89%A2%20%C2%B7%20%E8%8B%94%E7%9F%B3%E5%9C%B0%E9%9D%A2%20v2%20%C2%B7%20%E6%A6%82%E5%BF%B5%E8%90%BD%E5%9C%B0.bbmodel"
+}

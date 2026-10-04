@@ -1,0 +1,6 @@
+{
+  "checkedAt": "2026-10-04T01:30:53.274Z",
+  "action": "Native browser click on the Run button, 96 enemies, current version",
+  "result": "Completed; button re-enabled; iframe preview measured 7.5 FPS, 133.3 ms frame interval, 61.5 ms CPU median",
+  "note": "Embedded preview is an additional scenario; its presentation differs from the standalone A/B tabs in comparison.json"
+}

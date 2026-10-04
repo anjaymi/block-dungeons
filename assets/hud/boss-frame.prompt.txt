@@ -1,0 +1,9 @@
+Use case: precise-object-edit.
+Asset type: single production-ready transparent PNG boss health HUD frame sprite for a dark fantasy voxel dungeon game.
+Input image 1 is the visual reference and edit source. Extract and faithfully recreate ONLY the wide ornate boss frame at the TOP CENTER of the screenshot, without any other UI or game scene.
+Composition: one very wide horizontal boss frame centered, with generous transparent padding outside, intended display aspect 4:1 overall and approximately 5:1 for the main horizontal bar body. Target canvas 1024x256 if supported, otherwise use a wide transparent canvas while keeping the frame proportion.
+Match the screenshot's angular forged purple-black/gunmetal metal, subtle hammered dark panels, sharp beveled edges, muted violet highlights, warm gold pointed arrow-shaped end caps, tiny gold diamond centered below, and small warm gold skull with red eyes and curved horns centered at the top.
+The raised central dark title plaque must be completely EMPTY and wide enough for a Chinese boss name. Its target bounds are x30%-70%, y35%-60%.
+The very long horizontal black bloodbar well below the title must be completely EMPTY, dark, flat and straight. Its target bounds are x12%-88%, y64%-79%. Its border should be sharply defined with a thin violet bevel.
+Keep symmetry and precise horizontal alignment so software can draw a colored health fill and text over the sprite.
+Constraints: genuine transparent alpha background, no red bloodbar fill, no text or numbers anywhere, no scene, no chains, no flames, no characters, no logo, no watermark. Do not make a poster or a complete UI screenshot. Keep refined game-ready edges and a faithful flat frontal view.

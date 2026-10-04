@@ -1,0 +1,47 @@
+{
+  "checkedAt": "2026-10-04T08:58:37.4060304+08:00",
+  "tests": {
+    "total": 195,
+    "passed": 195,
+    "failed": 0,
+    "command": "node --test tests/*.test.cjs",
+    "log": "tests.log"
+  },
+  "sources": [
+    {
+      "file": "block-dungeons.html",
+      "sha256": "57772e3605372f45f5d2e82ace5f2a64ccfc117ad64db45aae5a9620e648c30c"
+    },
+    {
+      "file": "dungeon-journey.js",
+      "sha256": "5ce57f8a008068f0b22c2d51c32a1e231a7c0fe257e31a8919230bd1736a9c52"
+    },
+    {
+      "file": "dungeon-journey-runtime.js",
+      "sha256": "554fefee17c91e35273f5a1f9b407bce44e835df85b00df98cf8cb2d12cdeec2"
+    },
+    {
+      "file": "dungeon-map.js",
+      "sha256": "40fbb8308c7988bd840436b88037e12dac14b1a015956213e837a86f7528890e"
+    },
+    {
+      "file": "hud-controller.js",
+      "sha256": "60b1f27872954c42dbe78b4383c61d83f6210fab7279fb37f472e04c5617ef95"
+    },
+    {
+      "file": "fantasy-hud.js",
+      "sha256": "eb4690f7ec0b890399a6ce96dcfe9b6b17b024aa728ef71d7600e4d869cd15f1"
+    },
+    {
+      "file": "tests/game-harness.cjs",
+      "sha256": "bbe6f30e95f4fc203fe433197e05532d99a69c1fab8b7d9949cdf9c5a8399edc"
+    },
+    {
+      "file": "tests/dungeon-journey.test.cjs",
+      "sha256": "38799c092973501bc17deab257de7523a9f964963085ad2d975f2eb4080ef1ac"
+    }
+  ],
+  "browser": "browser-check.json",
+  "mobile": "mobile-interaction.json",
+  "captureNote": "Room states and player positions were staged for scene inspection. Native browser keys verified portal entry and floor advancement. Preview reloaded and a normal new adventure opened after inspection."
+}

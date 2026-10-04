@@ -1,0 +1,15 @@
+{
+  "result": {
+    "result": {
+      "type": "object",
+      "value": {
+        "action": "战斗中",
+        "alive": 3,
+        "inputHeld": false,
+        "locked": true,
+        "trial": "active"
+      }
+    }
+  },
+  "method": "Browser mouse click on mobile HUD; touch event routing covered by VM test; native touch dispatch unavailable"
+}
