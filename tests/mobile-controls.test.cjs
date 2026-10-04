@@ -38,10 +38,11 @@ test('手机一键收取免费装备，邻近商品不会被顺带购买或自�
   assert.equal(g.run('player.eq.weapon===equipped'),true);assert.equal(g.run('mobileInteraction().label'),'购买 · 20 绿宝石');
   g.run('interact();interact()');assert.equal(g.run('player.bag.length'),3);assert.equal(g.run('player.emeralds'),80);
 });
-test('没有目标时交互隐藏且不命中，有装备后显示拾取数量',()=>{
+test('没有目标或只有免费装备时交互隐藏，有商品时显示购买',()=>{
   const g=phone();assert.equal(g.run('hudLayout().buttons.interact.hidden'),true);
   assert.equal(g.run('const B=hudLayout().buttons.interact;HUDLayout.hit(hudLayout(),B.x+B.w/2,B.y+B.h/2)'),null);
-  g.run(loot);assert.equal(g.run('mobileInteraction().label'),'拾取附近 · 2 件');assert.equal(g.run('hudLayout().buttons.interact.hidden'),false);
+  g.run(loot);assert.equal(g.run('mobileInteraction().label'),'购买 · 20 绿宝石');assert.equal(g.run('hudLayout().buttons.interact.hidden'),false);
+  g.run('items=items.filter(g=>!g.price)');assert.equal(g.run('hudLayout().buttons.interact.hidden'),true);
 });
 test('背包部分装满时只收取能装下的物品，其余留在原地',()=>{
   const g=phone();g.run("for(let i=0;i<39;i++)addToBag(makeRune(0));items=[0,1].map(i=>({type:'gear',it:makeRune(i),x:5.3+i*.2,y:5,t:1}));interact();");

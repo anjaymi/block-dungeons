@@ -67,7 +67,7 @@ function inventoryAction(h,button=0,shift=false,ctrl=false){
       const i=p.cube.indexOf(null);if(i<0){addText(p.x,p.y,1.6,'方块已满','#ff8a6a',.9);return;}
       bagClick(0,false,false,from);bagClick(0,false,false,{kind:'cube',i});S.drawer='cube';S.scroll=0;
     }else if(h.kind==='itemDrop'){
-      bagClick(0,false,false,from);if(p.cursor){dropItemAt(p.cursor,p.x,p.y);p.cursor=null;recalc();}S.drawer=null;
+      bagClick(0,false,false,from);if(p.cursor){dropItemAt(p.cursor,p.x,p.y,true);p.cursor=null;recalc();}S.drawer=null;
     }
     return;
   }
